@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Jeevaamirdham_mobile",
-    "slug": "Jeevaamirdham_mobile",
+    "slug": "jeevaamirdham",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/appLogo.png",
@@ -15,7 +15,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/appLogo.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.jeevaamirdham.android"
     },
     "web": {
       "bundler": "metro",
@@ -36,6 +37,11 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "779d11f0-d372-471d-b150-d499dde82079"
+      }
     }
   }
 }

@@ -20,6 +20,9 @@ import PasswordScreen from "../screens/AuthScreen/PasswordScreen";
 import OTPScreen from "../screens/AuthScreen/OTPScreen";
 import CreatePasswordScreen from "../screens/AuthScreen/CreatePasswordScreen";
 import MainTabs from "./Maintabs";
+import MonthSelectionScreen from "../screens/Emagazine/MonthSelectionScreen";
+import MagazineDetailsScreen from "../screens/Emagazine/MagazineDetailScreen";
+import AudioPlayerScreen from "../screens/Emagazine/AudioPlayerScreen";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -52,7 +55,7 @@ const AppNavigator = () => {
   const { isAuthenticated } = useSelector((state: any) => state.auth);
 
   return (
-    <Stack.Navigator screenOptions={{cardStyle: { backgroundColor: "#f9e5ab" }}}>
+    <Stack.Navigator screenOptions={{ cardStyle: { backgroundColor: "#f9e5ab" } }}>
       {isAuthenticated ? (
         <>
           {/* Show AppHeader only when logged in */}
@@ -67,6 +70,9 @@ const AppNavigator = () => {
           <Stack.Screen name="MenuScreen" component={UserDashboard} />
           <Stack.Screen name="DashboardScreen" component={UserDashboard} />
           <Stack.Screen name="NotificationScreen" component={NotificationScreen} />
+          <Stack.Screen name="MonthSelection" component={MonthSelectionScreen} />
+          <Stack.Screen name="MagazineDetails" component={MagazineDetailsScreen} />
+          <Stack.Screen name="AudioPlayer" component={AudioPlayerScreen} />
         </>
       ) : (
         // Show Auth Stack if not authenticated

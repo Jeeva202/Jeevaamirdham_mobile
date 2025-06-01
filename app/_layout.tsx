@@ -1,7 +1,10 @@
 import AppNavigator from '@/src/navigation/AppNavigator';
 import React from 'react';
 import { StatusBar } from 'react-native';
+import 'react-native-gesture-handler';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { PaperProvider } from 'react-native-paper';
+import 'react-native-reanimated';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { Provider } from "react-redux";
 import { store } from "../src/redux/store";
@@ -18,15 +21,15 @@ export default function RootLayout() {
   });
 
   return (
-    <Provider store={store}>
-      <QueryClientProvider client={queryClient}>
-        <PaperProvider theme={customTheme}>
-           <StatusBar barStyle="dark-content"  />
-            {/* <SafeAreaView style={{flex:1, backgroundColor: '#000' }}> */}
-              <AppNavigator />
-            {/* </SafeAreaView> */}
-        </PaperProvider>
-      </QueryClientProvider>
-    </Provider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Provider store={store}>
+        <QueryClientProvider client={queryClient}>
+          <PaperProvider theme={customTheme}>
+            <StatusBar barStyle="dark-content" />
+            <AppNavigator />
+          </PaperProvider>
+        </QueryClientProvider>
+      </Provider>
+    </GestureHandlerRootView>
   );
 }

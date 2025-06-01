@@ -101,8 +101,8 @@ const MonthSelectionScreen: React.FC = () => {
           <MaterialIcons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.title}>E-MAGAZINE {year}</Text>
+        <View style={{ width: 40 }}></View>
       </View>
-
       {/* Grid */}
       <FlatList
         data={months}
@@ -151,17 +151,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f9e5ab',
-  },
-  header: {
-    paddingHorizontal: 24,
-    paddingVertical: 15,
-    alignItems: 'flex-start',
-  },
-  titleGradient: {
-    paddingHorizontal: 20,
-    paddingVertical: 6,
-    borderRadius: 25,
-    marginBottom: 5,
   },
   title: {
     fontSize: 20,
@@ -273,6 +262,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 10,
+    justifyContent: 'space-between',
   },
 
   controlButton: {

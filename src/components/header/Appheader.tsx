@@ -7,6 +7,7 @@ import { Image, Platform, StatusBar, StyleSheet, TouchableOpacity, View } from '
 export type RootStackParamList = {
   Main: undefined;
   NotificationScreen: undefined;
+  SubscriptionScreen: undefined;
   DashboardScreen: undefined;
   Login: undefined;
   Home: undefined;

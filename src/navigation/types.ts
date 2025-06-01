@@ -9,6 +9,8 @@ export type RootStackParamList = {
   MonthSelection: { year: number };
   MagazineDetails: { year: number; month: string };
   AudioPlayer: { year: number, month: string, audioData: AudioData[] };
+  BookDetail: { bookId: number };
+  SubscriptionScreen: undefined;
 };
 
 

@@ -9,7 +9,6 @@ import { RootStackParamList } from '@/src/navigation/types';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import type { RouteProp } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
-import { ScrollView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type AudioPlayerScreenRouteParams = {
@@ -48,13 +47,13 @@ export default function AudioPlayerScreen() {
         </TouchableOpacity>
 
       </View>
-      <ScrollView>
+      {/* <ScrollView> */}
         <AudioPlayerComponent
           audioData={audioData}
           plan={plan}
           onUpgrade={() => navigation.navigate('MagazineDetails', { year, month })}
         />
-      </ScrollView>
+      {/* </ScrollView> */}
 
     </SafeAreaView>
   );

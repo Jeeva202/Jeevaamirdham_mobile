@@ -1,6 +1,5 @@
 import { REACT_API_URL } from '@/app-config';
 import IndividualHeader from '@/src/components/header/IndividualHeader';
-import SubscriptionModal from '@/src/components/subscription';
 import { RootStackParamList } from '@/src/navigation/types';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -21,7 +20,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from 'react-query';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
-import { updatePlan } from '../../redux/userSlice';
 import { Loader } from './EmagazineScreen';
 
 const { width, height } = Dimensions.get('window');
@@ -185,7 +183,7 @@ export default function MagazineDetailsScreen() {
                 </View>
             </ScrollView>
 
-            <SubscriptionModal
+            {/* <SubscriptionModal
                 visible={modalVisible}
                 onDismiss={() => setModalVisible(false)}
                 onPlanSelect={(selectedPlan) => {
@@ -196,7 +194,7 @@ export default function MagazineDetailsScreen() {
                     }
                 }}
                 userId={userId}
-            />
+            /> */}
         </SafeAreaView>
     );
 }
@@ -307,7 +305,7 @@ const styles = StyleSheet.create({
     },
 
     summaryCard: {
-        backgroundColor: 'rgba(240, 175, 64, 0.33)',
+        backgroundColor: 'rgb(255, 255, 255)',
         borderRadius: 20,
         padding: 24,
         marginBottom: 24,
@@ -361,7 +359,7 @@ const styles = StyleSheet.create({
     },
 
     descriptionCard: {
-        backgroundColor: 'rgba(240, 175, 64, 0.33)',
+        backgroundColor: 'rgb(255, 255, 255)',
         borderRadius: 20,
         padding: 24,
         marginBottom: 32,

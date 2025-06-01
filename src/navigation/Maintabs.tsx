@@ -5,7 +5,7 @@ import { BottomNavigation, useTheme } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 // Importing your screens
-import BookScreen from '../screens/books/BookScreen';
+import BookListScreen from '../screens/books/BookScreen';
 import CartScreen from '../screens/Cart/CartScreen';
 import EmagazineScreen from '../screens/Emagazine/EmagazineScreen';
 import HomeScreen from '../screens/Home/HomeScreen';
@@ -91,7 +91,7 @@ export default function MainTabs() {
       {/* Books Tab */}
       <Tab.Screen
         name="Books"
-        component={BookScreen}
+        component={BookListScreen}
         options={{
           tabBarLabel: 'Books',
           tabBarIcon: ({ color, size }) => (

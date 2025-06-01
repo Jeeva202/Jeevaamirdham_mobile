@@ -1,12 +1,40 @@
+import { MaterialIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import React from 'react';
-import { View, Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-const CartScreen = () => {
+export default function CartScreen() {
+  const navigation = useNavigation<any>();
+
   return (
-    <View>
-      <Text>Cart Screen</Text>
-    </View>
-  );
-};
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#f9e5ab' }}>
 
-export default CartScreen;
+      {/* Empty state */}
+      <View style={styles.emptyContainer}>
+        <MaterialIcons name="add-shopping-cart" size={44} color="#ccc" />
+        <Text style={styles.emptyText}>Empty Cart</Text>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+
+
+const styles = StyleSheet.create({
+
+  emptyContainer: {
+  flex: 1,
+  justifyContent: 'center',
+  alignItems: 'center',
+  paddingHorizontal: 20,
+},
+emptyText: {
+  marginTop: 12,
+  fontSize: 16,
+  color: '#888',
+  textAlign: 'center',
+  fontWeight: '600',
+},
+
+})

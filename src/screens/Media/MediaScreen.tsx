@@ -1,6 +1,8 @@
 import Slider from '@react-native-community/slider';
+import { useFocusEffect } from '@react-navigation/native';
 import axios from 'axios';
 import { Audio, AVPlaybackStatus, AVPlaybackStatusError, AVPlaybackStatusSuccess, ResizeMode, Video } from 'expo-av';
+import { debounce } from 'lodash';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -127,6 +129,18 @@ const AudioPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn = tr
     }
   }, [isActive, isPlaying]);
 
+  // Pause and unload audio when screen loses focus (navigation away)
+  useFocusEffect(
+    React.useCallback(() => {
+      return () => {
+        soundRef.current?.pauseAsync().catch(() => {});
+        soundRef.current?.unloadAsync().catch(() => {});
+        setIsPlaying(false);
+        setCurrentAudio(null);
+        setPlaybackStatus(null);
+      };
+    }, [])
+  );
 
   const playAudio = async (audio: AudioItem) => {
     if (isProcessingAudio && currentAudio?.id === audio.id) return; // Prevent re-processing same audio if already busy
@@ -387,12 +401,27 @@ const VideoPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn, use
   const [error, setError] = useState<string | null>(null);
   const [isVideoBuffering, setIsVideoBuffering] = useState(false); // Renamed from isVideoLoading
   const [isVideoPlaying, setIsVideoPlaying] = useState(false); 
+  const [shouldAutoPlay, setShouldAutoPlay] = useState(false);
+
+  // Debounced setCurrentVideo to reduce lag when switching categories
+  const debouncedSetCurrentVideo = useRef(
+    debounce((video: VideoItem | null) => {
+      setCurrentVideo(video);
+    }, 250)
+  ).current;
+
+  useEffect(() => {
+    return () => {
+      debouncedSetCurrentVideo.cancel();
+    };
+  }, [debouncedSetCurrentVideo]);
 
   const theme = useTheme();
   const styles = useStyles(theme);
   const videoRef = useRef<Video>(null);
   const screenWidth = Dimensions.get('window').width;
 
+  // Fetch video data
   useEffect(() => {
     const fetchVideoData = async () => {
       setIsLoadingList(true);
@@ -411,16 +440,16 @@ const VideoPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn, use
           setSelectedCategory(firstCategory);
           const videosInFirstCategory = fetchedData.filter(v => v.category === firstCategory);
           if (videosInFirstCategory.length > 0) {
-            setCurrentVideo(videosInFirstCategory[0]);
+            debouncedSetCurrentVideo(videosInFirstCategory[0]);
           } else {
-            setCurrentVideo(null);
+            debouncedSetCurrentVideo(null);
           }
         } else if (fetchedData.length > 0) {
           setSelectedCategory(null);
-          setCurrentVideo(fetchedData[0]);
+          debouncedSetCurrentVideo(fetchedData[0]);
         } else {
           setSelectedCategory(null);
-          setCurrentVideo(null);
+          debouncedSetCurrentVideo(null);
         }
       } catch (err) {
         console.error("Error fetching video data:", err);
@@ -432,22 +461,23 @@ const VideoPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn, use
     fetchVideoData();
   }, []);
 
+  // Only auto play after user selects a video, not instantly on tab switch
+  useEffect(() => {
+    if (isActive && shouldAutoPlay && currentVideo && videoRef.current) {
+      videoRef.current.playAsync().catch(() => {});
+      setShouldAutoPlay(false);
+    }
+  }, [isActive, shouldAutoPlay, currentVideo]);
+
   // Effect to load/unload video when currentVideo changes
   useEffect(() => {
     const manageVideoPlayback = async () => {
       if (currentVideo && videoRef.current) {
-        setIsVideoBuffering(true); // Indicate start of process
+        setIsVideoBuffering(true);
         try {
-          console.log(`VideoTab: Unloading previous, then loading: ${currentVideo.title}`);
-          await videoRef.current.unloadAsync(); // Unload previous first
-          if (isActive) { // Only load and play if the tab is active
-            await videoRef.current.loadAsync({ uri: currentVideo.videofile_url }, { shouldPlay: true });
-            // onPlaybackStatusUpdate will handle isVideoBuffering and isVideoPlaying
-          } else {
-            // If tab is not active, just prepare it (load without playing) or simply set source for later
-            await videoRef.current.loadAsync({ uri: currentVideo.videofile_url }, { shouldPlay: false });
-            setIsVideoBuffering(false); // Loaded but not playing
-          }
+          await videoRef.current.unloadAsync();
+          await videoRef.current.loadAsync({ uri: currentVideo.videofile_url }, { shouldPlay: false });
+          setIsVideoBuffering(false);
         } catch (e) {
           console.error("Error loading/playing video:", e);
           alert(`Could not load video: ${currentVideo.title}.`);
@@ -460,7 +490,7 @@ const VideoPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn, use
       }
     };
     manageVideoPlayback();
-  }, [currentVideo, isActive]); // Re-run when currentVideo or isActive status changes
+  }, [currentVideo, isActive]);
 
   // Effect to pause video when tab becomes inactive
   useEffect(() => {
@@ -470,6 +500,19 @@ const VideoPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn, use
     }
   }, [isActive, isVideoPlaying]);
 
+  // Pause and unload video when screen loses focus (navigation away)
+  useFocusEffect(
+    React.useCallback(() => {
+      return () => {
+        if (videoRef.current) {
+          videoRef.current.pauseAsync().catch(() => {});
+          videoRef.current.unloadAsync().catch(() => {});
+        }
+        setIsVideoPlaying(false);
+        setCurrentVideo(null);
+      };
+    }, [])
+  );
 
   const selectVideoToPlay = (video: VideoItem) => {
     if (!isUserLoggedIn && video.id !== videoData[0]?.id) {
@@ -478,18 +521,15 @@ const VideoPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn, use
     if (userPlan === "basic" && video.id !== videoData[0]?.id) {
       alert("Upgrade to Elite plan to access this video."); return;
     }
-    
     if (currentVideo?.id === video.id && videoRef.current) {
-      // If same video is selected, toggle play or restart if needed (native controls might handle this)
       videoRef.current.getStatusAsync().then(status => {
         if(status.isLoaded && !status.isPlaying) {
           videoRef.current?.playAsync();
-        } else if (status.isLoaded && status.isPlaying) {
-           // videoRef.current?.pauseAsync(); // Or let user use controls
         }
       });
     } else {
-      setCurrentVideo(video); // Triggers the useEffect to load and play
+      setShouldAutoPlay(true);
+      debouncedSetCurrentVideo(video);
     }
   };
 
@@ -541,11 +581,9 @@ const VideoPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn, use
                 setSelectedCategory(category);
                 const videosInNewCategory = videoData.filter(v => v.category === category);
                 if (videosInNewCategory.length > 0) {
-                  if (currentVideo?.id !== videosInNewCategory[0].id) {
-                    setCurrentVideo(videosInNewCategory[0]);
-                  }
+                  debouncedSetCurrentVideo(videosInNewCategory[0]);
                 } else {
-                  setCurrentVideo(null);
+                  debouncedSetCurrentVideo(null);
                 }
             }}
             style={[styles.categoryChip, selectedCategory === category && { backgroundColor: theme.colors.primary }]}
@@ -586,7 +624,18 @@ const VideoPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn, use
         </Surface>
       ) : (
          filteredVideos.length > 0 && !currentVideo ?
-         <View style={styles.centered}><Text style={{ color: theme.colors.onSurface }}>Select a video to play.</Text></View> :
+         <Surface style={styles.mainVideoSurface}>
+           <View style={styles.videoContainer}>
+             <View style={[styles.video, {backgroundColor: '#000', justifyContent: 'center', alignItems: 'center'}]}>
+               <IconButton icon="play-circle-outline" size={64} iconColor={theme.colors.primary} style={{alignSelf: 'center'}} />
+             </View>
+           </View>
+           <Card.Content style={styles.mainVideoInfo}>
+             <Title style={styles.videoTitleMain} numberOfLines={1}>No Video Selected</Title>
+             <Paragraph style={styles.videoSubtitleMain} numberOfLines={2}>Select a video from the list to start playing.</Paragraph>
+           </Card.Content>
+         </Surface>
+         :
          <View style={styles.centered}><Text style={{ color: theme.colors.onSurface }}>No videos {selectedCategory ? `in "${selectedCategory}"` : "available"}.</Text></View>
       )}
 
@@ -684,7 +733,7 @@ const MediaPage: React.FC = () => {
     <TabBar
       {...props}
       indicatorStyle={{ backgroundColor: theme.colors.primary }}
-      style={{ backgroundColor: theme.colors.elevation.level2 }}
+      style={{ backgroundColor: '#f9e5ab' }}
       // labelStyle={{ fontWeight: '600' }}
       activeColor={theme.colors.primary}
       inactiveColor={theme.colors.onSurfaceVariant}
@@ -714,7 +763,7 @@ const MediaPage: React.FC = () => {
 const useStyles = (theme: MD3Theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#f9e5ab', // Light yellow background
   },
   centered: {
     flex: 1,
@@ -733,7 +782,7 @@ const useStyles = (theme: MD3Theme) => StyleSheet.create({
   categoryScroll: {
     paddingVertical: 12,
     paddingHorizontal: 16,
-    marginBottom: 8,
+    marginVertical: 8,
   },
   categoryChip: {
     marginRight: 8,
@@ -750,7 +799,11 @@ const useStyles = (theme: MD3Theme) => StyleSheet.create({
     marginBottom: 16,
     backgroundColor: theme.colors.elevation.level1,
     borderRadius: theme.roundness * 3,
-    elevation: 2,
+        elevation: 8,
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
   currentAudioCard: {
     borderColor: theme.colors.primary,
@@ -863,7 +916,11 @@ const useStyles = (theme: MD3Theme) => StyleSheet.create({
     marginHorizontal: 16,
     backgroundColor: theme.colors.elevation.level1,
     borderRadius: theme.roundness * 3,
-    elevation: 2,
+    elevation: 8,
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
   videoCardContent: {
     flexDirection: 'row',

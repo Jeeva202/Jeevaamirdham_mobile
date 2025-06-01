@@ -9,6 +9,8 @@ import SignupScreen from "../screens/AuthScreen/SignupScreen";
 // App Header
 import AppHeader from "../components/header/Appheader";
 // Extra Screens
+import BookDetailScreen from "../components/bookDetails/BookDetailScreen";
+import SubscriptionScreen from "../components/subscription";
 import CreatePasswordScreen from "../screens/AuthScreen/CreatePasswordScreen";
 import EmailScreen from "../screens/AuthScreen/EmailScreen";
 import OTPScreen from "../screens/AuthScreen/OTPScreen";
@@ -54,12 +56,13 @@ const AppNavigator = () => {
           />
           {/* Additional Screen after login */}
           <Stack.Screen name="MenuScreen" component={UserDashboard} />
-          <Stack.Screen name="DashboardScreen" component={UserDashboard} />
-          <Stack.Screen name="NotificationScreen" component={NotificationScreen} />
+          <Stack.Screen name="DashboardScreen" component={UserDashboard} options={{ headerShown: false }}/>
+          <Stack.Screen name="NotificationScreen" component={NotificationScreen} options={{ headerShown: false }}/>
           <Stack.Screen name="MonthSelection" component={MonthSelectionScreen} options={{ headerShown: false }}/>
           <Stack.Screen name="MagazineDetails" component={MagazineDetailsScreen} options={{ headerShown: false }}/>
           <Stack.Screen name="AudioPlayer" component={AudioPlayerScreen} options={{headerShown: false}}/>
-          {/* <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: true }} /> */}
+          <Stack.Screen name="BookDetail" component={BookDetailScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="SubscriptionScreen" component={SubscriptionScreen} options={{ headerShown: false }} />
         </>
       ) : (
         // Show Auth Stack if not authenticated

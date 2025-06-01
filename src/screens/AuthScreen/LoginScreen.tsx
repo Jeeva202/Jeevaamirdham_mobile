@@ -1,18 +1,16 @@
-import React from 'react';
-import { View, StyleSheet, Image } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { useDispatch } from 'react-redux';
-import { loginSuccess } from '../../redux/authSlice';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
+import React from 'react';
+import { Image, StyleSheet, View } from 'react-native';
 import {
   Button,
-  Text,
   Divider,
+  Text,
   Title,
-  Card,
-  useTheme,
+  useTheme
 } from 'react-native-paper';
-import { GoogleSigninButton } from '@react-native-google-signin/google-signin';
+import { useDispatch } from 'react-redux';
+import { loginSuccess } from '../../redux/authSlice';
 
 const LoginScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -32,7 +30,7 @@ const LoginScreen: React.FC = () => {
             source={require('../../../assets/images/logo_name_icon.png')}
             style={styles.logo}
           />
-          <Title style={[styles.title, {color: '#E68E00'}]}>Welcome toJeevaamirdham</Title>
+          <Title style={[styles.title, {color: '#E68E00'}]}>Welcome to Jeevaamirdham</Title>
           <Button
             mode="text"
             icon="google"

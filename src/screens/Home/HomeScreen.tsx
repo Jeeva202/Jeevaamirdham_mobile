@@ -1,121 +1,104 @@
-import React from 'react';
-import { ScrollView, StyleSheet, View, Image } from 'react-native';
-import { Card, Title, Paragraph, Button, Text, Chip, useTheme } from 'react-native-paper';
-import NewsletterCard from './Newsletter';
+import { REACT_API_URL } from '@/app-config';
+import PopularBooks from '@/src/components/popularBooks/PopularBooks';
+import TodayThoughts from '@/src/components/todaysThought/TodaysThought';
+import { MaterialIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import axios from 'axios';
+import { LinearGradient } from 'expo-linear-gradient';
+import React, { useEffect, useState } from 'react';
+import { FlatList, ImageBackground, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Text } from 'react-native-paper';
+import { useQuery } from 'react-query';
+import { Book } from '../books/BookScreen';
 
 const HomeScreen = () => {
-  const color = useTheme()
-  // Dummy data for thoughts, e-magazines, and books
-  const thoughts = [
-    { id: 1, text: '1.கண்களால் காண்பது, பார்வைக்கு எட்டியஅடிகள் வரையிலே !! கண்களை மூடிக்கொண்டுப் பார், மொத்த பிரபஞ்சமும் உனக்கு காட்ட காத்திருக்கிறது !!- நன்றி ஜீவ அமிர்தம்' },
-    { id: 2, text: '1.கண்களால் காண்பது, பார்வைக்கு எட்டியஅடிகள் வரையிலே !! கண்களை மூடிக்கொண்டுப் பார், மொத்த பிரபஞ்சமும் உனக்கு காட்ட காத்திருக்கிறது !!- நன்றி ஜீவ அமிர்தம்' },
-  ];
+  const [popularBooks, setPopularBooks] = useState<Book[]>([]);
 
-  const eMagazines = [
-    { id: 1, year: '2025' },
-    { id: 2, year: '2024' },
-    { id: 3, year: '2023' },
-  ];
+  useEffect(() => {
+    // Fetch popular books from your API
+    const fetchPopularBooks = async () => {
+      const response = await axios.get(`${REACT_API_URL}/ebooks/books`);
+      setPopularBooks(response.data);
+    };
+    fetchPopularBooks();
+  }, []);
 
-  const popularBooks = [
-    { id: 1, title: 'Gnana Amirtham', description: 'Siddharh Thoughts', price: '₹475.00' },
-    { id: 2, title: 'Gnana Amirtham', description: 'Siddharh Thoughts', price: '₹475.00' },
-    { id: 3, title: 'Gnana Amirtham', description: 'Siddharh Thoughts', price: '₹475.00' },
-    { id: 4, title: 'Gnana Amirtham', description: 'Siddharh Thoughts', price: '₹475.00' },
-  ];
+  const fetchYears = async () => {
+    const { data } = await axios.get(`${REACT_API_URL}/emagazine-page/magazine-yearwise`);
+    return data.reverse(); // latest years first
+  };
+  const navigation = useNavigation<any>();
+  const { data: years, isLoading, error } = useQuery('years', fetchYears);
+
+  if (isLoading || !years) return null;
+  const latestYears = years.slice(0, 3);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      {/* Today Thoughts Section */}
-      <Card style={styles.thoughtsCard}>
-        <View style={styles.thoughtsHeader}>
-          <Title style={styles.thoughtsTitle}>Today Thoughts</Title>
-          <Button
-            icon="play-circle"
-            mode="contained"
-            style={styles.playButton}
-            onPress={() => console.log('Play Thoughts')}
-          >
-            Play
-          </Button>
-        </View>
-        <Paragraph style={styles.thoughtsText}>{thoughts[0].text}</Paragraph>
-      </Card>
-
+      {/* Today's Thoughts Section */}
+      <TodayThoughts />
+      {/* Banner Section */}
+      <ImageBackground
+        source={require('../../../assets/images/Banner_mobile.png')}
+        style={styles.banner}
+        imageStyle={styles.bannerImage}
+        resizeMode="cover"
+      >
+        {/* <LinearGradient
+          colors={["rgba(0,0,0,0.1)", "rgba(0,0,0,0.3)"]}
+          style={styles.bannerOverlay}
+        >
+        </LinearGradient> */}
+      </ImageBackground>
       {/* E-magazine Edition Section */}
       <View style={styles.sectionHeader}>
-        <Title style={styles.sectionTitle}>E-magazine Edition</Title>
-        <Button
-          icon="chevron-right"
-          mode="contained"
-          compact
-          contentStyle={styles.viewAllContent}
-          labelStyle={styles.viewAllLabel}
-          onPress={() => console.log('Play Thoughts')}
-          style={styles.viewAllButton}
-        >
-          View All
-        </Button>
+        <Text style={styles.sectionTitle}>E-magazine Edition</Text>
+
+        <TouchableOpacity style={styles.viewAllButton} onPress={() => navigation.navigate('E-Magazine')}>
+          <Text style={styles.viewAllText}>View All</Text>
+          <MaterialIcons name="keyboard-arrow-right" size={16} color="#FFF" />
+        </TouchableOpacity>
       </View>
 
-      <View style={styles.eMagazineContainer}>
-        {eMagazines.map((magazine) => (
-          <Card key={magazine.id} style={styles.eMagazineCard}>
-            <Image
-              source={{ uri: 'https://via.placeholder.com/150' }}
-              style={styles.eMagazineImage}
-            />
-            <Button
-              mode="text"
-              icon="arrow-right-circle"
-              style={styles.eMagazineButton}
-              onPress={() => console.log(`View ${magazine.year}`)}
+      <View style={{marginVertical: 16}}>
+        <FlatList
+          data={latestYears}
+          keyExtractor={(item) => item.year.toString()}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('MonthSelection', { year: item.year })}
+              style={styles.card}
             >
-              View {magazine.year}
-            </Button>
-          </Card>
-        ))}
+              <ImageBackground source={{ uri: item.imgUrl }} style={styles.image}>
+                <LinearGradient
+                  colors={['transparent', 'rgba(0,0,0,0.8)']}
+                  style={styles.gradient}
+                >
+                  <View style={styles.cardContent}>
+                    <View style={styles.yearBadge}>
+                      <Text style={styles.yearText}>{item.year}</Text>
+                    </View>
+                    <Text style={styles.cardSubtitle}>Magazine Collection</Text>
+                  </View>
+                </LinearGradient>
+              </ImageBackground>
+            </TouchableOpacity>
+          )}
+        />
       </View>
+
 
       {/* Popular Books Section */}
-      <View style={styles.sectionHeader}>
-        <Title style={styles.sectionTitle}>Popular Books</Title>
-        <Button
-          icon="chevron-right"
-          mode="contained"
-          compact
-          contentStyle={styles.viewAllContent}
-          labelStyle={styles.viewAllLabel}
-          onPress={() => console.log('View All Books')}
-          style={styles.viewAllButton}
-        >
-          View All
-        </Button>
-      </View>
-      <View style={styles.booksContainer}>
-        {popularBooks.map((book, index) => (
-          <Card key={index} style={styles.bookCard}>
-            <Image
-              source={{ uri: 'https://via.placeholder.com/150' }}
-              style={styles.bookImage}
-            />
-            <Card.Content>
-              <Title style={styles.bookTitle}>{book.title}</Title>
-              <Paragraph style={styles.bookDescription}>{book.description}</Paragraph>
-              <Text style={styles.bookPrice}>{book.price}</Text>
-              <Button
-                mode="contained"
-                style={styles.buyButton}
-                labelStyle={styles.buyButtonLabel}
-                onPress={() => console.log(`Buy ${book.title}`)}
-              >
-                Buy Now
-              </Button>
-            </Card.Content>
-          </Card>
-        ))}
-      </View>
-      <NewsletterCard />
+      <PopularBooks
+        books={popularBooks.map((book) => ({
+          ...book,
+          subtitle: book.subtitle ?? '', // Provide a default value if missing
+          offPrice: book.offPrice !== undefined && book.offPrice !== null ? String(book.offPrice) : '', // Ensure string type
+          imgUrl: book.imgUrl ?? '',     // Provide a default value if missing
+        }))}
+      />
     </ScrollView>
   );
 };
@@ -127,7 +110,15 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 16,
-    paddingBottom: 50,
+    paddingBottom: 20,
+  },
+  cardSubtitle: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    opacity: 0.8,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   thoughtsCard: {
     backgroundColor: '#FFFAEB',
@@ -156,6 +147,10 @@ const styles = StyleSheet.create({
   playButton: {
     backgroundColor: 'transparent',
   },
+  cardContent: {
+    alignItems: 'flex-start',
+  },
+
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -163,9 +158,10 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#000000',
+        fontSize: 24,
+        fontWeight: '700',
+        color: '#1A1A1A',
+        letterSpacing: -0.5,
   },
   viewAllContent: {
     flexDirection: 'row-reverse',
@@ -176,8 +172,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   viewAllButton: {
-    margin: 0,
-    padding: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: '#E68E00',
+    borderRadius: 20,
+  },
+  viewAllText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#fff',
+    marginRight: 4,
   },
   eMagazineContainer: {
     flexDirection: 'row',
@@ -202,6 +208,14 @@ const styles = StyleSheet.create({
   },
   eMagazineButton: {
     marginTop: 0,
+  },
+  yearBadge: {
+    backgroundColor: 'rgba(255, 107, 53, 0.9)',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+    marginBottom: 8,
+    backdropFilter: 'blur(10px)',
   },
   booksContainer: {
     flexDirection: 'row',
@@ -246,6 +260,53 @@ const styles = StyleSheet.create({
   buyButtonLabel: {
     color: '#FFFFFF',
     fontSize: 14,
+  },
+  card: {
+    flex: 1,
+    borderRadius: 20,
+    overflow: 'hidden',
+    backgroundColor: '#1A1A1A',
+    elevation: 8,
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+
+    width: 150,
+    height: 200,
+    marginRight: 12,
+  },
+  image: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  gradient: {
+    // height: 60,
+    justifyContent: 'center',
+    padding: 10,
+  },
+  yearText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  banner: {
+    width: '100%',
+    height: 200,
+    borderRadius: 10,
+    overflow: 'hidden',
+    marginVertical: 18,
+    alignSelf: 'center',
+    shadowColor: '#EA580C',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  bannerImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 10,
   },
 });
 

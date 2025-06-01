@@ -104,20 +104,19 @@ export default function EmagazineScreen() {
       </View>
     </TouchableOpacity>
   );
-
+  const renderHeader = () => (
+    <View style={styles.headerContainer}>
+      <Text style={styles.headerTitle}>E-MAGAZINES</Text>
+    </View>
+  );
   return (
     <View style={styles.container}>      
-      {/* Header Section */}
-      <View style={styles.header}>
-          <Text style={styles.title}>E-MAGAZINE</Text>
-      </View>
-
-      {/* Magazine Grid */}
       <FlatList
         data={years}
         keyExtractor={item => item.year.toString()}
         numColumns={2}
         renderItem={renderYearCard}
+        ListHeaderComponent={renderHeader}
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
         columnWrapperStyle={styles.row}
@@ -132,27 +131,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9e5ab',
   },
   
-  header: {
-    paddingHorizontal: 24,
-    paddingVertical: 15,
-    alignItems: 'flex-start',
-    display: 'flex',
-    flexDirection: 'column',
+  headerContainer: {
+    marginBottom: 10,
   },
-  
-  titleGradient: {
-    paddingHorizontal: 20,
-    paddingVertical: 6,
-    borderRadius: 25,
-    marginBottom: 5,
-  },
-  
-  title: {
+  headerTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#F09300',
+    color: '#1A1A1A',
     letterSpacing: 2,
-    textAlign: 'center',
   },
   
   subtitle: {

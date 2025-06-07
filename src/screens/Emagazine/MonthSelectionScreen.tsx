@@ -4,11 +4,12 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Dimensions,
   FlatList,
   ImageBackground,
+  RefreshControl,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -51,8 +52,9 @@ const MonthSelectionScreen: React.FC = () => {
   const { year } = route.params;
   const dispatch = useDispatch();
   const userId = useSelector((state: RootState) => state.user.userId);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const { data: months, isLoading, error } = useQuery(['months', year], () => fetchMonths(year));
+  const { data: months, isLoading, error, refetch } = useQuery(['months', year], () => fetchMonths(year));
 
   useEffect(() => {
     const loadUserId = async () => {
@@ -81,6 +83,15 @@ const MonthSelectionScreen: React.FC = () => {
     navigation.navigate('MagazineDetails', { year, month });
   };
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refetch]);
+
   if (isLoading) return <Loader />;
   if (error) return (
     <View style={styles.errorContainer}>
@@ -91,8 +102,6 @@ const MonthSelectionScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* <StatusBar barStyle="light-content" backgroundColor="#0A0A0A" /> */}
-      {/* Header Controls */}
       <View style={styles.headerControls}>
         <TouchableOpacity
           style={styles.iconButton}
@@ -142,6 +151,14 @@ const MonthSelectionScreen: React.FC = () => {
         contentContainerStyle={styles.listContainer}
         columnWrapperStyle={styles.row}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#F09300"]}
+            tintColor="#F09300"
+          />
+        }
       />
     </SafeAreaView>
   );
@@ -155,7 +172,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#F09300',
+    color: '#1a1a1a',
     letterSpacing: 2,
     textAlign: 'center',
   },

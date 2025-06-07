@@ -16,7 +16,9 @@
         "foregroundImage": "./assets/images/appLogo.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.jeevaamirdham.android",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "bundler": "metro",
@@ -33,7 +35,11 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+      [
+        "@react-native-google-signin/google-signin"
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true

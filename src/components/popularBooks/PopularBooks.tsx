@@ -146,33 +146,6 @@ interface Props {
 const PopularBooks: React.FC<Props> = ({ books }) => {
     const navigation = useNavigation<StackNavigationProp<any>>();
 
-    const renderRatingStars = (rating: number = 4.5) => {
-        const fullStars = Math.floor(rating);
-        const hasHalfStar = rating % 1 !== 0;
-        const stars = [];
-
-        for (let i = 0; i < fullStars; i++) {
-            stars.push(
-                <MaterialIcons key={i} name="star" size={12} color="#FFD700" />
-            );
-        }
-
-        if (hasHalfStar) {
-            stars.push(
-                <MaterialIcons key="half" name="star-half" size={12} color="#FFD700" />
-            );
-        }
-
-        const remainingStars = 5 - Math.ceil(rating);
-        for (let i = 0; i < remainingStars; i++) {
-            stars.push(
-                <MaterialIcons key={`empty-${i}`} name="star-border" size={12} color="#E0E0E0" />
-            );
-        }
-
-        return stars;
-    };
-
     return (
         <View style={styles.container}>
             {/* Enhanced Header */}
@@ -247,13 +220,13 @@ const CARD_WIDTH = (width - HORIZONTAL_PADDING * 2 - CARD_GAP) / 2;
 
 const styles = StyleSheet.create({
     container: {
-        marginVertical: 20,
+        marginTop: 20,
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-end',
-        marginBottom: 16,
+        marginBottom: 20,
     },
     sectionTitle: {
         fontSize: 24,
@@ -305,8 +278,9 @@ const styles = StyleSheet.create({
     },
     imageContainer: {
         position: 'relative',
-        height: 160,
-        paddingVertical: 8,
+        height: 170,
+        padding: 10,
+        marginTop: 5
     },
     bookImage: {
         width: '100%',

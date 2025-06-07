@@ -5,12 +5,12 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
     Dimensions,
     ImageBackground,
+    RefreshControl,
     ScrollView,
-    Share,
     StyleSheet,
     TouchableOpacity,
     View
@@ -54,13 +54,13 @@ export default function MagazineDetailsScreen() {
     ];
     const safeMonth = monthNames.includes(month as MonthName) ? (month as MonthName) : 'January';
 
-    const { data: magazine, isLoading, error } = useQuery(
+    const { data: magazine, isLoading, error, refetch, isRefetching } = useQuery(
         ['magazine', year, safeMonth],
         () => fetchMagazineDetails(year, safeMonth)
     );
 
     const isLoggedIn = useSelector((state: RootState) => state.user.isLoggedIn);
-    const userId = useSelector((state: RootState) => state.user.userId) || '3162';
+    const userId = useSelector((state: RootState) => state.user.userId) || '3152';
     const plan = useSelector((state: RootState) => state.user.plan);
     const isAccountExpired = useSelector((state: RootState) => state.user.isAccountExpired);
     const [modalVisible, setModalVisible] = useState(false);
@@ -70,6 +70,34 @@ export default function MagazineDetailsScreen() {
         July: 7, August: 8, September: 9, October: 10, November: 11, December: 12,
     };
 
+    // Memoize processed description and summary to avoid recalculating on every render
+    const processedDescription = useMemo(() =>
+        magazine?.description ? magazine.description.replace(/\n/g, ' ') : 'No description available at the moment.',
+        [magazine?.description]
+    );
+    const processedSummary = useMemo(() =>
+        magazine?.shortDesc || '',
+        [magazine?.shortDesc]
+    );
+
+    // Fetch audio data with useQuery for better loading state and caching
+    const {
+        data: audioData,
+        isLoading: isAudioLoading,
+        error: audioError,
+        refetch: refetchAudio,
+        isRefetching: isAudioRefetching
+    } = useQuery(
+        ['emagazine-audio', year, safeMonth, userId],
+        async () => {
+            const { data } = await axios.get(`${REACT_API_URL}/emagazine-page/audiofile`, {
+                params: { uid: userId, year, month: monthMapping[safeMonth] },
+            });
+            return data;
+        },
+        { enabled: !!userId && !!year && !!safeMonth }
+    );
+
     if (isLoading) return <Loader />;
     if (error || !magazine) return (
         <View style={styles.errorContainer}>
@@ -78,30 +106,10 @@ export default function MagazineDetailsScreen() {
         </View>
     );
 
-    const handleListen = async () => {
-        try {
-            const response = await axios.get(`${REACT_API_URL}/emagazine-page/audiofile?uid=${userId}&year=${year}&month=${monthMapping[safeMonth]}`);
-            navigation.navigate('AudioPlayer', { year, month: safeMonth, audioData: response.data });
-        } catch (err) {
-            console.error('Error fetching audio data:', err);
-        }
+    const handleListen = () => {
+        // Navigate immediately, let AudioPlayerScreen handle loading
+        navigation.navigate('AudioPlayer', { year, month: safeMonth, audioData: [] });
     };
-
-    const handleShare = async () => {
-        try {
-            await Share.share({
-                message: `Check out this amazing magazine: ${magazine.title} by ${magazine.author}`,
-                title: magazine.title,
-            });
-        } catch (error) {
-            console.error('Error sharing:', error);
-        }
-    };
-
-    const handleBack = () => {
-        navigation.goBack();
-    };
-
 
     return (
         <SafeAreaView style={styles.container}>
@@ -116,24 +124,7 @@ export default function MagazineDetailsScreen() {
                         colors={['rgba(0,0,0,0.3)', 'transparent', 'rgba(0,0,0,0.8)']}
                         style={styles.heroGradient}
                     >
-                        {/* Header Controls */}
-                        {/* <View style={styles.headerControls}>
-                            <TouchableOpacity
-                                style={styles.iconButton}
-                                onPress={() => navigation.goBack()}
-                            >
-                                <MaterialIcons name="arrow-back" size={24} color="#fff" />
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={styles.iconButton}
-                                onPress={() => navigation.navigate('Main')}
-                            >
-                                <MaterialIcons name="home" size={24} color="#fff" />
-                            </TouchableOpacity>
-
-                        </View> */}
-                        <IndividualHeader />
-
+                        <IndividualHeader headerName = {''} />
                         {/* Magazine Info Overlay */}
                         <View style={styles.heroContent}>
                             <View style={styles.metadataContainer}>
@@ -141,24 +132,28 @@ export default function MagazineDetailsScreen() {
                                     <Text style={styles.yearMonthText}>{safeMonth} {year}</Text>
                                 </View>
                             </View>
-
                             <Text style={styles.heroTitle}>{magazine.title}</Text>
                             <Text style={styles.heroAuthor}>by {magazine.author}</Text>
                         </View>
                     </LinearGradient>
                 </ImageBackground>
             </View>
-
             {/* Content Section */}
             <ScrollView
                 style={styles.contentSection}
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={isAudioRefetching}
+                        onRefresh={refetchAudio}
+                        colors={["#F09300"]}
+                        tintColor="#F09300"
+                    />
+                }
             >
-
-
                 {/* Action Button */}
-                <TouchableOpacity style={styles.listenButton} onPress={handleListen} activeOpacity={0.9}>
+                <TouchableOpacity style={styles.listenButton} onPress={handleListen} activeOpacity={0.9} disabled={isAudioLoading || isAudioRefetching}>
                     <LinearGradient
                         colors={['#FF6B35', '#F7931E', '#FFD700']}
                         start={{ x: 0, y: 0 }}
@@ -166,35 +161,26 @@ export default function MagazineDetailsScreen() {
                         style={styles.buttonGradient}
                     >
                         <View style={styles.buttonContent}>
-                            <IconButton icon="play-circle" iconColor="#FFFFFF" size={28} />
-                            <Text style={styles.buttonText}>LISTEN NOW</Text>
+                            {(isAudioLoading || isAudioRefetching) ? (
+                                <IconButton icon="loading" iconColor="#FFFFFF" size={28} />
+                            ) : (
+                                <IconButton icon="play-circle" iconColor="#FFFFFF" size={28} />
+                            )}
+                            <Text style={styles.buttonText}>{(isAudioLoading || isAudioRefetching) ? 'LOADING...' : 'LISTEN NOW'}</Text>
                         </View>
                     </LinearGradient>
                 </TouchableOpacity>
                 {/* Quick Summary Card */}
                 <View style={styles.summaryCard}>
                     <Text style={styles.sectionTitle}>Summary</Text>
-                    <Text style={styles.shortDescription}>{magazine.shortDesc}</Text>
+                    <Text style={styles.shortDescription}>{processedSummary}</Text>
                 </View>
                 {/* Full Description */}
                 <View style={styles.descriptionCard}>
                     <Text style={styles.sectionTitle}>Description</Text>
-                    <Text style={styles.fullDescription}>{magazine.description.replace(/\n/g, ' ') || 'No description available at the moment.'}</Text>
+                    <Text style={styles.fullDescription}>{processedDescription}</Text>
                 </View>
             </ScrollView>
-
-            {/* <SubscriptionModal
-                visible={modalVisible}
-                onDismiss={() => setModalVisible(false)}
-                onPlanSelect={(selectedPlan) => {
-                    dispatch(updatePlan(selectedPlan));
-                    setModalVisible(false);
-                    if (selectedPlan !== 'basic') {
-                        handleListen();
-                    }
-                }}
-                userId={userId}
-            /> */}
         </SafeAreaView>
     );
 }

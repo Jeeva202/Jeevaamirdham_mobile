@@ -14,7 +14,7 @@ import {
   View
 } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
-import { ActivityIndicator, Button, Dialog, IconButton, Portal, Text } from 'react-native-paper';
+import { ActivityIndicator, Button, Dialog, IconButton, Text } from 'react-native-paper';
 import Animated, {
   Extrapolate,
   interpolate,
@@ -99,7 +99,7 @@ const AudioPlayerComponent = memo(({ audioData, plan, onUpgrade }: Props) => {
     if (isProcessingAudio && currentAudioIndex === index) return;
 
     if (!disablePlanRestrictions && plan === 'basic' && index !== 0) {
-          navigation.navigate('SubscriptionScreen');
+      navigation.navigate('SubscriptionScreen');
       // setUpgradeDialogVisible(true);
       return;
     }
@@ -271,7 +271,7 @@ const AudioPlayerComponent = memo(({ audioData, plan, onUpgrade }: Props) => {
               if (itemIsProcessing) return;
               if (isLocked && !isCurrentlySelected) {
                 // setUpgradeDialogVisible(true);
-          navigation.navigate('SubscriptionScreen');
+                navigation.navigate('SubscriptionScreen');
 
                 return;
               }
@@ -283,36 +283,7 @@ const AudioPlayerComponent = memo(({ audioData, plan, onUpgrade }: Props) => {
             }}
             activeOpacity={0.8}
           >
-            <Portal>
-              <Dialog
-                visible={upgradeDialogVisible}
-                onDismiss={hideUpgradeDialog}
-                style={styles.dialogContainer}
-              >
-                <Dialog.Title style={styles.dialogTitle}>Upgrade Required</Dialog.Title>
-                <Dialog.Content>
-                  <Text style={styles.dialogText}>
-                    This content is only available for PRO members. Upgrade now to access all audio chapters and features.
-                  </Text>
-                </Dialog.Content>
-                <Dialog.Actions>
-                  <Button onPress={hideUpgradeDialog} textColor="#666">
-                    Cancel
-                  </Button>
-                  <Button
-                    onPress={() => {
-                      hideUpgradeDialog();
-                      onUpgrade();
-                    }}
-                    mode="contained"
-                    style={styles.upgradeButton}
-                    buttonColor="#007AFF"
-                  >
-                    Upgrade
-                  </Button>
-                </Dialog.Actions>
-              </Dialog>
-            </Portal>
+
             <View style={styles.cardContent}>
               <View style={styles.albumArtContainer}>
                 <Image
@@ -412,9 +383,9 @@ const AudioPlayerComponent = memo(({ audioData, plan, onUpgrade }: Props) => {
                   </View>
                 )}
                 <TouchableOpacity
-                  onPress={() => isLocked ? ()=>{} : openTranscriptSheet(index)}
+                  onPress={() => isLocked ? () => { } : openTranscriptSheet(index)}
                   activeOpacity={0.8}
-                  style={styles.transcriptTouchable} 
+                  style={styles.transcriptTouchable}
                 >
                   <Text
                     style={[styles.trackTranscript, isLocked && styles.lockedText]}
@@ -491,51 +462,51 @@ const AudioPlayerComponent = memo(({ audioData, plan, onUpgrade }: Props) => {
         <View style={styles.header}>
           <Text style={styles.headerTitle}>E-Magazine Chapters</Text>
           <Text style={styles.headerSubtitle}>{audioData.length} Chapters available</Text>
-        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 8 }}>
-        <Button
-          mode="contained"
-          onPress={isPlayAll && isPlaying ? pauseAll : playAll}
-          style={{  backgroundColor: '#F09300' }}
-          disabled={audioData.length === 0}
-        >
-          {isPlayAll && isPlaying ? 'Pause' : isPlayAll ? 'Playing All...' : 'Play All'}
-        </Button>
-      </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 8 }}>
+            <Button
+              mode="contained"
+              onPress={isPlayAll && isPlaying ? pauseAll : playAll}
+              style={{ backgroundColor: '#F09300' }}
+              disabled={audioData.length === 0}
+            >
+              {isPlayAll && isPlaying ? 'Pause' : isPlayAll ? 'Playing All...' : 'Play All'}
+            </Button>
+          </View>
         </View>
         <View style={styles.audioList}>
           {audioData.map((audio, index) => renderAudioCard(audio, index))}
         </View>
-
-        <BottomSheetModal
-          ref={bottomSheetModalRef}
-          snapPoints={snapPoints}
-          onChange={handleSheetChanges}
-          enablePanDownToClose
-          enableDynamicSizing={false}
-          backgroundStyle={{ backgroundColor: '#fff' }}
-          handleIndicatorStyle={{ backgroundColor: '#E0E0E0' }}
-          backdropComponent={renderBackdrop}
-        >
-          <BottomSheetView style={styles.sheetContent}>
-            <Text style={styles.sheetTitle}>
-              {typeof transcriptSheetIndex === 'number' && audioData[transcriptSheetIndex]
-                ? audioData[transcriptSheetIndex].title
-                : ''}
-            </Text>
-            <ScrollView style={{ flex: 1 }}>
-              <Text style={styles.sheetTranscript}>
-                {typeof transcriptSheetIndex === 'number' && audioData[transcriptSheetIndex]?.transcript
-                  ? audioData[transcriptSheetIndex].transcript.replace(/\n+/g, '\n')
-                  : 'No transcript available'}
-              </Text>
-            </ScrollView>
-            <Button mode="contained" onPress={closeTranscriptSheet} style={styles.sheetCloseButton}>
-              Close
-            </Button>
-          </BottomSheetView>
-        </BottomSheetModal>
-
       </ScrollView>
+
+
+      <BottomSheetModal
+        ref={bottomSheetModalRef}
+        snapPoints={snapPoints}
+        onChange={handleSheetChanges}
+        enablePanDownToClose
+        enableDynamicSizing={false}
+        backgroundStyle={{ backgroundColor: '#fff' }}
+        handleIndicatorStyle={{ backgroundColor: '#E0E0E0' }}
+        backdropComponent={renderBackdrop}
+      >
+        <BottomSheetView style={styles.sheetContent}>
+          <Text style={styles.sheetTitle}>
+            {typeof transcriptSheetIndex === 'number' && audioData[transcriptSheetIndex]
+              ? audioData[transcriptSheetIndex].title
+              : ''}
+          </Text>
+          <ScrollView style={{ flex: 1 }}>
+            <Text style={styles.sheetTranscript}>
+              {typeof transcriptSheetIndex === 'number' && audioData[transcriptSheetIndex]?.transcript
+                ? audioData[transcriptSheetIndex].transcript.replace(/\n+/g, '\n')
+                : 'No transcript available'}
+            </Text>
+          </ScrollView>
+          <Button mode="contained" onPress={closeTranscriptSheet} style={styles.sheetCloseButton}>
+            Close
+          </Button>
+        </BottomSheetView>
+      </BottomSheetModal>
 
       <Dialog visible={upgradeDialogVisible} onDismiss={hideUpgradeDialog} style={styles.dialogContainer}>
         <Dialog.Title style={styles.dialogTitle}>Upgrade Required</Dialog.Title>
@@ -727,7 +698,7 @@ const styles = StyleSheet.create({
   readMoreText: {
     fontSize: 14,
     color: '#F09300',
-    fontStyle: 'italic', 
+    fontStyle: 'italic',
     fontWeight: '700',
     // marginBottom: 8,
   },

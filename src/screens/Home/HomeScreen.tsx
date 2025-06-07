@@ -6,35 +6,50 @@ import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
-import { FlatList, ImageBackground, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { FlatList, ImageBackground, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useQuery } from 'react-query';
 import { Book } from '../books/BookScreen';
 
 const HomeScreen = () => {
   const [popularBooks, setPopularBooks] = useState<Book[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    // Fetch popular books from your API
-    const fetchPopularBooks = async () => {
-      const response = await axios.get(`${REACT_API_URL}/ebooks/books`);
-      setPopularBooks(response.data);
-    };
-    fetchPopularBooks();
-  }, []);
+  const fetchPopularBooks = async () => {
+    const response = await axios.get(`${REACT_API_URL}/ebooks/books`);
+    setPopularBooks(response.data);
+  };
 
   const fetchYears = async () => {
     const { data } = await axios.get(`${REACT_API_URL}/emagazine-page/magazine-yearwise`);
     return data.reverse(); // latest years first
   };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([
+      fetchPopularBooks(),
+      refetchYears()
+    ]);
+    setRefreshing(false);
+  };
+
+  useEffect(() => {
+    fetchPopularBooks();
+  }, []);
+
   const navigation = useNavigation<any>();
-  const { data: years, isLoading, error } = useQuery('years', fetchYears);
+  const { data: years, isLoading, error, refetch: refetchYears } = useQuery('years', fetchYears);
 
   if (isLoading || !years) return null;
   const latestYears = years.slice(0, 3);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+    >
       {/* Today's Thoughts Section */}
       <TodayThoughts />
       {/* Banner Section */}
@@ -51,6 +66,8 @@ const HomeScreen = () => {
         </LinearGradient> */}
       </ImageBackground>
       {/* E-magazine Edition Section */}
+      <View style={{marginBottom: 20}}>
+
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>E-magazine Edition</Text>
 
@@ -60,7 +77,7 @@ const HomeScreen = () => {
         </TouchableOpacity>
       </View>
 
-      <View style={{marginVertical: 16}}>
+      <View>
         <FlatList
           data={latestYears}
           keyExtractor={(item) => item.year.toString()}
@@ -87,6 +104,7 @@ const HomeScreen = () => {
             </TouchableOpacity>
           )}
         />
+      </View>
       </View>
 
 

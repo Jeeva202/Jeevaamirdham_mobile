@@ -2,11 +2,13 @@ import { REACT_API_URL } from '@/app-config';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
+import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
   FlatList,
   ImageBackground,
+  RefreshControl,
   StyleSheet,
   TouchableOpacity,
   View
@@ -60,8 +62,14 @@ const fetchYears = async () => {
 
 export default function EmagazineScreen() {
   const navigation = useNavigation<any>();
-  
-  const { data: years, isLoading, error } = useQuery('years', fetchYears);
+  const [refreshing, setRefreshing] = useState(false);
+  const { data: years, isLoading, error, refetch } = useQuery('years', fetchYears);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  };
 
   if (isLoading) return <Loader />;
   if (error) return (
@@ -120,6 +128,7 @@ export default function EmagazineScreen() {
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
         columnWrapperStyle={styles.row}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       />
     </View>
   );

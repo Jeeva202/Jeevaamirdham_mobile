@@ -15,6 +15,7 @@ import CreatePasswordScreen from "../screens/AuthScreen/CreatePasswordScreen";
 import EmailScreen from "../screens/AuthScreen/EmailScreen";
 import OTPScreen from "../screens/AuthScreen/OTPScreen";
 import PasswordScreen from "../screens/AuthScreen/PasswordScreen";
+import CheckoutScreen from "../screens/Cart/CheckoutScreen";
 import UserDashboard from "../screens/dashboard/Dashboard";
 import AudioPlayerScreen from "../screens/Emagazine/AudioPlayerScreen";
 import MagazineDetailsScreen from "../screens/Emagazine/MagazineDetailScreen";
@@ -63,6 +64,7 @@ const AppNavigator = () => {
           <Stack.Screen name="AudioPlayer" component={AudioPlayerScreen} options={{headerShown: false}}/>
           <Stack.Screen name="BookDetail" component={BookDetailScreen} options={{ headerShown: false }} />
           <Stack.Screen name="SubscriptionScreen" component={SubscriptionScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="CheckoutScreen" component={CheckoutScreen} options={{ headerShown: false }} />
         </>
       ) : (
         // Show Auth Stack if not authenticated

@@ -1,11 +1,12 @@
 import { REACT_API_URL } from '@/app-config';
 import IndividualHeader from '@/src/components/header/IndividualHeader';
 import { RootStackParamList } from '@/src/navigation/types';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
     Dimensions,
     ImageBackground,
@@ -60,10 +61,10 @@ export default function MagazineDetailsScreen() {
     );
 
     const isLoggedIn = useSelector((state: RootState) => state.user.isLoggedIn);
-    const userId = useSelector((state: RootState) => state.user.userId) || '3152';
-    const plan = useSelector((state: RootState) => state.user.plan);
     const isAccountExpired = useSelector((state: RootState) => state.user.isAccountExpired);
     const [modalVisible, setModalVisible] = useState(false);
+      const [plan, setPlan] = useState('')
+      const [userId, setUserId] = useState('')
 
     const monthMapping: Record<MonthName, number> = {
         January: 1, February: 2, March: 3, April: 4, May: 5, June: 6,
@@ -79,6 +80,30 @@ export default function MagazineDetailsScreen() {
         magazine?.shortDesc || '',
         [magazine?.shortDesc]
     );
+
+          React.useEffect(() => {
+            const fetchUserId = async () => {
+                try {
+                    const userString = await AsyncStorage.getItem('user');
+                    if (userString) {
+                        const userObj = JSON.parse(userString);
+                        const response = await axios.get(
+                        REACT_API_URL + `/getPlan`,
+                        {
+                            params: {
+                                id: userObj.userId
+                            },
+                        }
+                    );
+                        setUserId(userObj.userId);
+                        setPlan(response.data[0].plan)
+                    }
+                } catch (e) {
+                    console.log('Failed to load user information.');
+                }
+            };
+            fetchUserId();
+        }, []);
 
     // Fetch audio data with useQuery for better loading state and caching
     const {

@@ -1,6 +1,6 @@
-
 import { REACT_API_URL } from '@/app-config';
-import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ParamListBase, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import axios from 'axios';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -12,10 +12,8 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
-import { IconButton, Text } from 'react-native-paper';
+import { IconButton, Portal, Snackbar, Text } from 'react-native-paper';
 import { Loader } from '../Emagazine/EmagazineScreen';
-
-import { ParamListBase } from '@react-navigation/native';
 
 interface RootStackParamList extends ParamListBase {
     BookDetail: { bookId: number };
@@ -40,9 +38,28 @@ const BookListScreen: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [favorites, setFavorites] = useState<Set<number>>(new Set());
-    const [cartItems, setCartItems] = useState<Set<number>>(new Set());
+    const [favorites, setFavorites] = useState<number[]>([]);
+    const [cartItems, setCartItems] = useState<number[]>([]);
+    const [snackbarVisible, setSnackbarVisible] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState('');
     const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+    const route = useRoute();
+    const [userId, setUserId] = useState<string | null>(null);
+
+    React.useEffect(() => {
+        const fetchUserId = async () => {
+            try {
+                const userString = await AsyncStorage.getItem('user');
+                if (userString) {
+                    const userObj = JSON.parse(userString);
+                    setUserId(userObj.userId);
+                }
+            } catch (e) {
+                console.log('Failed to load user information.');
+            }
+        };
+        fetchUserId();
+    }, []);
 
     const fetchBooks = useCallback(async () => {
         try {
@@ -50,8 +67,8 @@ const BookListScreen: React.FC = () => {
             const response = await axios.get(`${REACT_API_URL}/ebooks/books`);
             const booksData = response.data.map((book: Book) => ({
                 ...book,
-                isFavorite: favorites.has(book.id),
-                isInCart: cartItems.has(book.id),
+                isFavorite: favorites.includes(book.id),
+                isInCart: cartItems.includes(book.id),
             }));
             setBooks(booksData);
             setFilteredBooks(booksData);
@@ -65,6 +82,35 @@ const BookListScreen: React.FC = () => {
         }
     }, [favorites, cartItems]);
 
+    const fetchFavorites = useCallback(async () => {
+        if (!userId) return;
+        try {
+            const response = await axios.get(`${REACT_API_URL}/favorites`, {
+                params: { userId }
+            });
+            setFavorites(response.data.favorites || []);
+        } catch (error) {
+            console.error("Error fetching favorites:", error);
+        }
+    }, [userId]);
+
+    const fetchCartItems = useCallback(async () => {
+        if (!userId) return;
+        try {
+            const response = await axios.get(`${REACT_API_URL}/ebooks/get_cart?id=${userId}`);
+            setCartItems(response.data.cartItems || []);
+        } catch (error) {
+            console.error("Error fetching cart items:", error);
+        }
+    }, [userId]);
+
+    useEffect(() => {
+        if (userId) {
+            fetchFavorites();
+            fetchCartItems();
+        }
+    }, [userId, fetchFavorites, fetchCartItems]);
+
     useEffect(() => {
         fetchBooks();
     }, [fetchBooks]);
@@ -72,41 +118,75 @@ const BookListScreen: React.FC = () => {
     const onRefresh = useCallback(() => {
         setRefreshing(true);
         fetchBooks();
-    }, [fetchBooks]);
-
-    const addToCart = useCallback((book: Book) => {
-        const newCartItems = new Set(cartItems);
-        if (cartItems.has(book.id)) {
-            newCartItems.delete(book.id);
-        } else {
-            newCartItems.add(book.id);
+        if (userId) {
+            fetchFavorites();
+            fetchCartItems();
         }
-        setCartItems(newCartItems);
+    }, [fetchBooks, fetchFavorites, fetchCartItems, userId]);
 
-        setFilteredBooks(prev => prev.map(b =>
-            b.id === book.id ? { ...b, isInCart: !b.isInCart } : b
-        ));
-        setBooks(prev => prev.map(b =>
-            b.id === book.id ? { ...b, isInCart: !b.isInCart } : b
-        ));
-    }, [cartItems]);
-
-    const toggleFavorite = useCallback((book: Book) => {
-        const newFavorites = new Set(favorites);
-        if (favorites.has(book.id)) {
-            newFavorites.delete(book.id);
-        } else {
-            newFavorites.add(book.id);
+    const addToCart = useCallback(async (book: Book) => {
+        if (!userId) {
+            setSnackbarMessage('Please log in to add to cart');
+            setSnackbarVisible(true);
+            return;
         }
-        setFavorites(newFavorites);
+        try {
+            await axios.post(`${REACT_API_URL}/ebooks/add_to_cart`, {
+                userId,
+                book: book.id,
+                quantity: 1
+            });
+            setCartItems(prev => [...prev, book.id]);
+            setFilteredBooks(prev => prev.map(b =>
+                b.id === book.id ? { ...b, isInCart: true } : b
+            ));
+            setBooks(prev => prev.map(b =>
+                b.id === book.id ? { ...b, isInCart: true } : b
+            ));
+            setSnackbarMessage('Added to cart');
+            setSnackbarVisible(true);
+        } catch (error) {
+            console.error("Error adding to cart:", error);
+            setSnackbarMessage('Failed to add to cart');
+            setSnackbarVisible(true);
+        }
+    }, [userId]);
 
-        setFilteredBooks(prev => prev.map(b =>
-            b.id === book.id ? { ...b, isFavorite: !b.isFavorite } : b
-        ));
-        setBooks(prev => prev.map(b =>
-            b.id === book.id ? { ...b, isFavorite: !b.isFavorite } : b
-        ));
-    }, [favorites]);
+    const toggleFavorite = useCallback(async (book: Book) => {
+        if (!userId) {
+            setSnackbarMessage('Please log in to manage favorites');
+            setSnackbarVisible(true);
+            return;
+        }
+        try {
+            if (favorites.includes(book.id)) {
+                await axios.post(`${REACT_API_URL}/deleteFavorites`, {
+                    userId,
+                    bookId: book.id
+                });
+                setFavorites(prev => prev.filter(id => id !== book.id));
+                setSnackbarMessage('Removed from favorites');
+            } else {
+                await axios.post(`${REACT_API_URL}/addFavorites`, {
+                    userId,
+                    bookId: book.id
+                });
+                setFavorites(prev => [...prev, book.id]);
+                setSnackbarMessage('Added to favorites');
+            }
+            setFilteredBooks(prev => prev.map(b =>
+                b.id === book.id ? { ...b, isFavorite: !b.isFavorite } : b
+            ));
+            setBooks(prev => prev.map(b =>
+                b.id === book.id ? { ...b, isFavorite: !b.isFavorite } : b
+            ));
+            setSnackbarVisible(true);
+        } catch (error) {
+            console.error("Error toggling favorite:", error);
+            setSnackbarMessage('Failed to update favorites');
+            setSnackbarVisible(true);
+        }
+    }, [favorites, userId]);
 
     const renderBookCard = ({ item }: { item: Book }) => (
         <TouchableOpacity
@@ -155,12 +235,6 @@ const BookListScreen: React.FC = () => {
                             </Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity
-                            style={styles.buyButton}
-                            onPress={() => { }}
-                        >
-                            <Text style={styles.buyButtonText}>Buy Now</Text>
-                        </TouchableOpacity>
                     </View>
                 </View>
             </View>
@@ -209,6 +283,16 @@ const BookListScreen: React.FC = () => {
                     </View>
                 }
             />
+            <Portal>
+                <Snackbar
+                    visible={snackbarVisible}
+                    onDismiss={() => setSnackbarVisible(false)}
+                    duration={3000}
+                    style={styles.snackbar}
+                >
+                    {snackbarMessage}
+                </Snackbar>
+            </Portal>
         </View>
     );
 };
@@ -219,21 +303,22 @@ const styles = StyleSheet.create({
         backgroundColor: '#f9e5ab',
     },
     headerContainer: {
-        marginBottom: 10,
         paddingHorizontal: 16
     },
     headerTitle: {
         fontSize: 22,
         fontWeight: 'bold',
         color: '#1A1A1A',
+        letterSpacing: 2,
+        padding: 16,
+        textAlign: 'center'
     },
     bookList: {
         paddingBottom: 30,
-        paddingHorizontal: 12, // add horizontal padding here
+        paddingHorizontal: 12,
     },
     card: {
         marginBottom: 20,
-        // marginHorizontal: 16, // REMOVE this to prevent overflow
         borderRadius: 20,
         backgroundColor: '#fff',
         shadowColor: '#EA580C',
@@ -244,7 +329,7 @@ const styles = StyleSheet.create({
     },
     cardContent: {
         flexDirection: 'row',
-        padding: 20,
+        padding: 15,
     },
     imageContainer: {
         position: 'relative',
@@ -264,8 +349,8 @@ const styles = StyleSheet.create({
     },
     bookInfo: {
         flex: 1,
-        flexDirection: 'column', // ensure column layout
-        justifyContent: 'space-between',
+        flexDirection: 'column',
+        justifyContent: 'center',
     },
     bookHeader: {
         flexDirection: 'row',
@@ -294,26 +379,19 @@ const styles = StyleSheet.create({
     actionButtons: {
         flexDirection: 'row',
         gap: 10,
-        marginTop: 'auto', // push buttons to the bottom
         alignItems: 'flex-end',
     },
     cartButton: {
         backgroundColor: '#fff',
-        paddingVertical: 12,
+        paddingVertical: 10,
         paddingHorizontal: 10,
-        borderRadius: 12,
-        borderWidth: 1,
+        borderRadius: 8,
+        borderWidth: 2,
         borderColor: '#FF9500',
-    },
-    cartButtonActive: {
-        borderColor: 'rgba(76, 175, 80, 0.3)',
     },
     cartButtonText: {
         color: '#FF9500',
         fontWeight: 'bold',
-    },
-    cartButtonTextActive: {
-        color: '#4CAF50',
     },
     buyButton: {
         borderRadius: 12,
@@ -355,6 +433,10 @@ const styles = StyleSheet.create({
         fontSize: 18,
         color: '#FF9500',
         fontWeight: '700',
+    },
+    snackbar: {
+        backgroundColor: '#333',
+        borderRadius: 4,
     },
 });
 

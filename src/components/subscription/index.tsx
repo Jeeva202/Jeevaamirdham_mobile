@@ -62,9 +62,9 @@ const plans = [
 ];
 
 import { REACT_API_URL } from '@/app-config';
-import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
+import IndividualHeader from '../header/IndividualHeader';
 
 type RootStackParamList = {
   SubscriptionScreen: undefined;
@@ -103,7 +103,7 @@ export default function SubscriptionScreen(): React.ReactElement {
 
   const handlePurchase = async (planName: string) => {
     setLoading(true);
-    
+
     try {
       const userData = {
         name: (await AsyncStorage.getItem('username')) || null,
@@ -225,7 +225,7 @@ export default function SubscriptionScreen(): React.ReactElement {
 
   const handlePaymentSuccess = async (planName: any, amount: any, userData: { id: any; }, paymentId = 'sim_payment_123') => {
     try {
-      
+
       const paymentData = {
         razorpay_payment_id: paymentId,
         plan: planName,
@@ -245,7 +245,7 @@ export default function SubscriptionScreen(): React.ReactElement {
         const data = await res.json();
         console.log("Payment data saved successfully:", data);
         showMessage("Payment successful and subscription activated!", 'success');
-        
+
         // Navigate back or to success screen
         setTimeout(() => {
           navigation.goBack();
@@ -309,7 +309,7 @@ export default function SubscriptionScreen(): React.ReactElement {
       <View style={styles.cardContent}>
         <Text style={styles.planName}>{plan.name}</Text>
         <Text style={styles.planPrice}>{plan.price}</Text>
-        
+
         <View style={styles.featuresList}>
           {plan.features.map((feature, idx) => (
             <View key={idx} style={styles.featureItem}>
@@ -319,10 +319,10 @@ export default function SubscriptionScreen(): React.ReactElement {
           ))}
         </View>
       </View>
-      
+
       <TouchableOpacity
         style={[
-          styles.planButton, 
+          styles.planButton,
           { backgroundColor: plan.buttonStyle.backgroundColor },
           loading && styles.disabledButton
         ]}
@@ -339,28 +339,16 @@ export default function SubscriptionScreen(): React.ReactElement {
   return (
     <SafeAreaView style={styles.container}>
       {/* <StatusBar barStyle="dark-content" backgroundColor="#fff" /> */}
-      
+      <IndividualHeader headerName='Choose Your Plan' />
 
-            <View style={styles.headerControls}>
-        <TouchableOpacity
-          style={styles.iconButton}
-          onPress={() => navigation.goBack()}
-        >
-          <MaterialIcons name="arrow-back" size={24} color="#fff" />
-        </TouchableOpacity>
-        {/* <Text style={styles.title}>Subscription Plans</Text> */}
-        <View style={{ width: 40 }}></View>
-      </View>
-
-      <ScrollView 
+      <ScrollView
         style={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Choose Your Plan</Text>
           <Text style={styles.subtitle}>
-            Select the perfect subscription plan for your needs
+            Select the subscription plan for your needs
           </Text>
         </View>
 
@@ -412,14 +400,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
   },
-    title: {
+  title: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#F09300',
     letterSpacing: 2,
     textAlign: 'center',
   },
-    headerControls: {
+  headerControls: {
     flexDirection: 'row',
     gap: 10,
     alignItems: 'center',
@@ -427,7 +415,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     justifyContent: 'space-between',
   },
-    iconButton: {
+  iconButton: {
     // backgroundColor: '#E68E00',
     backgroundColor: '#F09300',
     borderRadius: 20,

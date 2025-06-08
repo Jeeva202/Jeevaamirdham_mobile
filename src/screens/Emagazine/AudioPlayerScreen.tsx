@@ -4,14 +4,14 @@ import axios from 'axios';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useQuery } from 'react-query';
-import { useSelector } from 'react-redux';
 import AudioPlayerComponent from '../../components/audioEbook';
-import { RootState } from '../../redux/store';
 
 import { RootStackParamList } from '@/src/navigation/types';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { RouteProp } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
+import React, { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Loader } from './EmagazineScreen';
 
@@ -23,14 +23,41 @@ export default function AudioPlayerScreen() {
   const route = useRoute<AudioPlayerScreenRouteProp>();
   const navigation = useNavigation<Props['navigation']>();
   const { year, month, audioData } = route.params;
-  const plan = useSelector((state: RootState) => state.user.plan);
-  const userId = useSelector((state: RootState) => state.user.userId) || '3152';
+  const [plan, setPlan] = useState('')
+  const [userId, setUserId] = useState('')
+
+  // const plan = useSelector((state: RootState) => state.user.plan);
+  // const userId = useSelector((state: RootState) => state.user.userId) || '3152';
 
   type MonthName = 'January' | 'February' | 'March' | 'April' | 'May' | 'June' | 'July' | 'August' | 'September' | 'October' | 'November' | 'December';
   const monthMapping: Record<MonthName, number> = {
     January: 1, February: 2, March: 3, April: 4, May: 5, June: 6,
     July: 7, August: 8, September: 9, October: 10, November: 11, December: 12,
   };
+
+      React.useEffect(() => {
+        const fetchUserId = async () => {
+            try {
+                const userString = await AsyncStorage.getItem('user');
+                if (userString) {
+                    const userObj = JSON.parse(userString);
+                    const response = await axios.get(
+                    REACT_API_URL + `/getPlan`,
+                    {
+                        params: {
+                            id: userObj.userId
+                        },
+                    }
+                );
+                    setUserId(userObj.userId);
+                    setPlan(response.data[0].plan)
+                }
+            } catch (e) {
+                console.log('Failed to load user information.');
+            }
+        };
+        fetchUserId();
+    }, []);
 
   // useQuery for fetching audio data
   const {

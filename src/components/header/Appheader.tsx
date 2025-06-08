@@ -8,7 +8,7 @@ export type RootStackParamList = {
   Main: undefined;
   NotificationScreen: undefined;
   SubscriptionScreen: undefined;
-  DashboardScreen: undefined;
+  Profile: undefined;
   Login: undefined;
   Home: undefined;
   'E-Magazine': undefined;
@@ -34,33 +34,34 @@ const AppHeader: React.FC = () => {
   }, []);
 
   return (
-    <View style={{paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0}}>
-    <View style={styles.header}>
-      {/* Left Section: Logo & Greeting */}
-      <View style={styles.leftSection}>
-        <Image
-          source={require('../../../assets/images/jeevaamirdhamLogo.png')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
-      </View> 
+    <View style={{ paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }}>
+      <View style={styles.header}>
+        {/* Left Section: Logo & Greeting */}
+        <View style={styles.leftSection}>
+          <Image
+            source={require('../../../assets/images/jeevaamirdhamLogo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </View>
 
-      {/* Right Section: Icons */} 
-      <View style={styles.rightSection}>
-        <TouchableOpacity
-          style={styles.iconButton}
-          onPress={() => navigation.navigate('NotificationScreen')}
-        >
-          <MaterialIcons name="notifications" size={24} color="#fff" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.iconButton}
-          onPress={() => navigation.navigate('DashboardScreen')}
-        >
-          <MaterialIcons name="person" size={24} color="#fff"/>
-        </TouchableOpacity>
+        {/* Right Section: Icons */}
+        <View style={styles.rightSection}>
+          {/* <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => navigation.navigate('NotificationScreen')}
+          >
+            <MaterialIcons name="notifications" size={24} color="#fff" />
+          </TouchableOpacity> */}
+
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => navigation.navigate('Profile')}
+          >
+            <MaterialIcons name="person" size={24} color="#fff" />
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
     </View>
   );
 };

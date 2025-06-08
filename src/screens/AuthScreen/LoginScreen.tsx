@@ -1,107 +1,136 @@
-// import AsyncStorage from '@react-native-async-storage/async-storage';
-// import { useNavigation } from '@react-navigation/native';
-// import React from 'react';
-// import { Image, StyleSheet, View } from 'react-native';
-// import {
-//   Button,
-//   Divider,
-//   Text,
-//   Title,
-//   useTheme
-// } from 'react-native-paper';
-// import { useDispatch } from 'react-redux';
-// import { loginSuccess } from '../../redux/authSlice';
+import { REACT_API_URL } from '@/app-config';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
+import axios from 'axios';
+import React from 'react';
+import { Image, StyleSheet, View } from 'react-native';
+import {
+  Button,
+  Divider,
+  Text,
+  Title,
+  useTheme
+} from 'react-native-paper';
+import { useDispatch } from 'react-redux';
+import { loginSuccess } from '../../redux/authSlice';
 
-// const LoginScreen: React.FC = () => {
-//   const navigation = useNavigation<any>();
-//   const dispatch = useDispatch();
-//   const { colors } = useTheme();
+const LoginScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
+  const dispatch = useDispatch();
+  const { colors } = useTheme();
 
-//   const handleGoogleLogin = async () => {
-//     // Simulate Google login success
-//     const userData = { userId: '3152', email: 'jeevaganesh.2812@gmail.com' };
-//     await AsyncStorage.setItem('user', JSON.stringify(userData));
-//     dispatch(loginSuccess(userData));
-//   };
+  const handleGoogleLogin = async () => {
+    const dispatch = useDispatch();
 
-//   return (
-//     <View style={[styles.container]}>
-//           <Image
-//             source={require('../../../assets/images/logo_name_icon.png')}
-//             style={styles.logo}
-//           />
-//           <Title style={[styles.title, {color: '#E68E00'}]}>Welcome to Jeevaamirdham</Title>
-//           <Button
-//             mode="text"
-//             icon="google"
-//             onPress={handleGoogleLogin}
-//             style={[{ backgroundColor: "#FFFFFF" }, styles.button]}
-//             labelStyle={[{ color: "#333" }, styles.buttonLabel]}
-//           >
-//             Sign in with Google
-//           </Button>
-//           <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'center'}}>
-//             <Divider style={styles.divider} />
-//             <Text style={styles.orText}>Or sign in with</Text>
-//             <Divider style={styles.divider} />
-//           </View>
+    try {
+      // Simulate Google Login (replace this with real Google Auth later)
+      const userData = {
+        userId: '3152',
+        email: 'jeevaganesh.2812@gmail.com',
+      };
 
-//           <Button
-//             mode="contained"
-//             onPress={() => navigation.navigate('EmailScreen')}
-//             style={styles.button}
-//             labelStyle={[{ color: "#fff" }, styles.buttonLabel]}
-//           >
-//             Continue with Email
-//           </Button>
+      // 🔄 Fetch plan from API
+      const response = await axios.get(`${REACT_API_URL}/getPlan`, {
+        params: { id: userData.userId },
+      });
 
-//           <Text style={styles.orText}>
-//           by proceeding, you agree to our Privacy Policy and
-//           Terms of Services
-//           </Text>
-//     </View>
-//   );
-// };
+      const userPlan = response.data?.[0]?.plan || 'free'; // fallback plan
 
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     justifyContent: 'center',
-//     paddingHorizontal: 20,
-//   },
-//   card: {
-//     padding: 20,
-//     borderRadius: 10,
-//     elevation: 4,
-//   },
-//   logo: {
-//     alignSelf: 'center',
-//     marginBottom: 20,
-//   },
-//   title: {
-//     fontSize: 26,
-//     marginBottom: 20,
-//     textAlign: 'center',
-//     fontWeight: 'bold',
-//   },
-//   button: {
-//     marginVertical: 10,
-//   },
-//   buttonLabel: {
-//     fontSize: 16,
-//     fontWeight: 'bold',
-//   },
-//   divider: {
-//     marginVertical: 20,
-//   },
-//   orText: {
-//     textAlign: 'center',
-//     marginVertical: 10,
-//     color: 'gray',
-//   },
-// });
+      // ✅ Store combined user data in AsyncStorage
+      const fullUserData = {
+        ...userData,
+        plan: userPlan,
+      };
 
-// export default LoginScreen;
+      await AsyncStorage.setItem('user', JSON.stringify(fullUserData));
+
+      // ✅ Dispatch login success with full data
+      dispatch(loginSuccess(fullUserData));
+
+    } catch (error) {
+      console.error('Login failed:', error);
+      // optionally show a toast or alert
+    }
+  };
+
+  return (
+    <View style={[styles.container]}>
+      <Image
+        source={require('../../../assets/images/logo_name_icon.png')}
+        style={styles.logo}
+      />
+      <Title style={[styles.title, { color: '#E68E00' }]}>Welcome to Jeevaamirdham</Title>
+      <Button
+        mode="text"
+        icon="google"
+        onPress={handleGoogleLogin}
+        style={[{ backgroundColor: "#FFFFFF" }, styles.button]}
+        labelStyle={[{ color: "#333" }, styles.buttonLabel]}
+      >
+        Sign in with Google
+      </Button>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+        <Divider style={styles.divider} />
+        <Text style={styles.orText}>Or sign in with</Text>
+        <Divider style={styles.divider} />
+      </View>
+
+      <Button
+        mode="contained"
+        onPress={() => navigation.navigate('EmailPasswordLoginScreen')}
+        style={styles.button} 
+        labelStyle={[{ color: "#fff" }, styles.buttonLabel]}
+      >
+        Continue with Email
+      </Button>
+
+      <Text style={styles.orText}>
+        by proceeding, you agree to our Privacy Policy and
+        Terms of Services
+      </Text>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  card: {
+    padding: 20,
+    borderRadius: 10,
+    elevation: 4,
+  },
+  logo: {
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 26,
+    marginBottom: 20,
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
+  button: {
+    marginVertical: 10,
+  },
+  buttonLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  divider: {
+    marginVertical: 20,
+  },
+  orText: {
+    textAlign: 'center',
+    marginVertical: 10,
+    color: 'gray',
+  },
+});
+
+export default LoginScreen;
 
 
 
@@ -276,118 +305,118 @@
 
 
 
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Google from "expo-auth-session/providers/google";
-import * as WebBrowser from "expo-web-browser";
-import { useEffect, useState } from "react";
-import { Button, Image, StyleSheet, Text, View } from "react-native";
+// import AsyncStorage from "@react-native-async-storage/async-storage";
+// import * as Google from "expo-auth-session/providers/google";
+// import * as WebBrowser from "expo-web-browser";
+// import { useEffect, useState } from "react";
+// import { Button, Image, StyleSheet, Text, View } from "react-native";
 
-WebBrowser.maybeCompleteAuthSession();
+// WebBrowser.maybeCompleteAuthSession();
 
-export default function LoginScreen() {
-  const [token, setToken] = useState("");
-  const [userInfo, setUserInfo] = useState<any>(null);
+// export default function LoginScreen() {
+//   const [token, setToken] = useState("");
+//   const [userInfo, setUserInfo] = useState<any>(null);
 
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    androidClientId: "622659185789-nc69h64k48nem80h0coaajimdh6f9jr0.apps.googleusercontent.com",
-    iosClientId: "",
-    webClientId: "622659185789-rue1itvqp2i8numvn6fe60avpmggg481.apps.googleusercontent.com",
-  });
+//   const [request, response, promptAsync] = Google.useAuthRequest({
+//     androidClientId: "622659185789-nc69h64k48nem80h0coaajimdh6f9jr0.apps.googleusercontent.com",
+//     iosClientId: "",
+//     webClientId: "622659185789-rue1itvqp2i8numvn6fe60avpmggg481.apps.googleusercontent.com",
+//   });
 
-  useEffect(() => {
-    handleEffect();
-  }, [response, token]);
+//   useEffect(() => {
+//     handleEffect();
+//   }, [response, token]);
 
-  async function handleEffect() {
-    const user = await getLocalUser();
-    console.log("user", user);
-    if (!user) {
-      if (response?.type === "success") {
-        // setToken(response.authentication.accessToken);
-        if (response.authentication && response.authentication.accessToken) {
-          getUserInfo(response.authentication.accessToken);
-        }
-      }
-    } else {
-      setUserInfo(user);
-      console.log("loaded locally");
-    }
-  }
+//   async function handleEffect() {
+//     const user = await getLocalUser();
+//     console.log("user", user);
+//     if (!user) {
+//       if (response?.type === "success") {
+//         // setToken(response.authentication.accessToken);
+//         if (response.authentication && response.authentication.accessToken) {
+//           getUserInfo(response.authentication.accessToken);
+//         }
+//       }
+//     } else {
+//       setUserInfo(user);
+//       console.log("loaded locally");
+//     }
+//   }
 
-  const getLocalUser = async () => {
-    const data = await AsyncStorage.getItem("@user");
-    if (!data) return null;
-    return JSON.parse(data);
-  };
+//   const getLocalUser = async () => {
+//     const data = await AsyncStorage.getItem("@user");
+//     if (!data) return null;
+//     return JSON.parse(data);
+//   };
 
-  const getUserInfo = async (token: string) => {
-    if (!token) return;
-    try {
-      const response = await fetch(
-        "https://www.googleapis.com/userinfo/v2/me",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+//   const getUserInfo = async (token: string) => {
+//     if (!token) return;
+//     try {
+//       const response = await fetch(
+//         "https://www.googleapis.com/userinfo/v2/me",
+//         {
+//           headers: { Authorization: `Bearer ${token}` },
+//         }
+//       );
 
-      const user = await response.json();
-      await AsyncStorage.setItem("@user", JSON.stringify(user));
-      setUserInfo(user);
-    } catch (error) {
-      // Add your own error handler here
-    }
-  };
+//       const user = await response.json();
+//       await AsyncStorage.setItem("@user", JSON.stringify(user));
+//       setUserInfo(user);
+//     } catch (error) {
+//       // Add your own error handler here
+//     }
+//   };
 
-  return (
-    <View style={styles.container}>
-      {!userInfo ? (
-        <Button
-          title="Sign in with Google"
-          disabled={!request}
-          onPress={() => {
-            promptAsync();
-          }}
-        />
-      ) : (
-        <View style={styles.card}>
-          {userInfo?.picture && (
-            <Image source={{ uri: userInfo?.picture }} style={styles.image} />
-          )}
-          <Text style={styles.text}>Email: {userInfo.email}</Text>
-          <Text style={styles.text}>
-            Verified: {userInfo.verified_email ? "yes" : "no"}
-          </Text>
-          <Text style={styles.text}>Name: {userInfo.name}</Text>
-          {/* <Text style={styles.text}>{JSON.stringify(userInfo, null, 2)}</Text> */}
-        </View>
-      )}
-      <Button
-        title="remove local store"
-        onPress={async () => await AsyncStorage.removeItem("@user")}
-      />
-    </View>
-  );
-}
+//   return (
+//     <View style={styles.container}>
+//       {!userInfo ? (
+//         <Button
+//           title="Sign in with Google"
+//           disabled={!request}
+//           onPress={() => {
+//             promptAsync();
+//           }}
+//         />
+//       ) : (
+//         <View style={styles.card}>
+//           {userInfo?.picture && (
+//             <Image source={{ uri: userInfo?.picture }} style={styles.image} />
+//           )}
+//           <Text style={styles.text}>Email: {userInfo.email}</Text>
+//           <Text style={styles.text}>
+//             Verified: {userInfo.verified_email ? "yes" : "no"}
+//           </Text>
+//           <Text style={styles.text}>Name: {userInfo.name}</Text>
+//           {/* <Text style={styles.text}>{JSON.stringify(userInfo, null, 2)}</Text> */}
+//         </View>
+//       )}
+//       <Button
+//         title="remove local store"
+//         onPress={async () => await AsyncStorage.removeItem("@user")}
+//       />
+//     </View>
+//   );
+// }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  text: {
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-  card: {
-    borderWidth: 1,
-    borderRadius: 15,
-    padding: 15,
-  },
-  image: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-  },
-});
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//     backgroundColor: "#fff",
+//     alignItems: "center",
+//     justifyContent: "center",
+//   },
+//   text: {
+//     fontSize: 20,
+//     fontWeight: "bold",
+//   },
+//   card: {
+//     borderWidth: 1,
+//     borderRadius: 15,
+//     padding: 15,
+//   },
+//   image: {
+//     width: 100,
+//     height: 100,
+//     borderRadius: 50,
+//   },
+// });

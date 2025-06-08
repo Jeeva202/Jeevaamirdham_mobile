@@ -255,7 +255,7 @@ const AudioPlayerComponent = memo(({ audioData, plan, onUpgrade }: Props) => {
 
   const renderAudioCard = useCallback(
     (audio: AudioData, index: number) => {
-      const isLocked = !disablePlanRestrictions && plan === 'basic' && index !== 0;
+      const isLocked = !disablePlanRestrictions && plan === 'basic'
       const isCurrentlySelected = currentAudioIndex === index;
       const itemIsProcessing = isProcessingAudio && isCurrentlySelected;
 

@@ -141,13 +141,15 @@ const styles = StyleSheet.create({
   },
   
   headerContainer: {
-    marginBottom: 10,
+    // marginBottom: 10,
   },
   headerTitle: {
     fontSize: 22,
     fontWeight: 'bold',
     color: '#1A1A1A',
     letterSpacing: 2,
+    padding: 16,
+    textAlign: 'center'
   },
   
   subtitle: {

@@ -184,7 +184,7 @@ const CheckoutScreen: React.FC = () => {
         try {
             setIsLoading(true);
             setError(null);
-            
+
             // 1. Create Razorpay order on your backend
             const orderResponse = await axios.post(`${REACT_API_URL}/ebooks/create-order`, {
                 amount: totalAmount,
@@ -200,7 +200,7 @@ const CheckoutScreen: React.FC = () => {
             // 2. Prepare user data
             const userData = await AsyncStorage.getItem('user');
             const parsedUserData = userData ? JSON.parse(userData) : {};
-            
+
             // 3. Razorpay options
             const options = {
                 key: 'rzp_live_tjwWB1t6xxjHG1',
@@ -255,7 +255,7 @@ const CheckoutScreen: React.FC = () => {
                 }
 
                 // 7. Navigate to success screen
-                navigation.navigate('OrderSuccess', { 
+                navigation.navigate('OrderSuccess', {
                     orderId: paymentData.razorpay_order_id,
                     paymentId: paymentData.razorpay_payment_id,
                     amount: totalAmount,
@@ -279,35 +279,35 @@ const CheckoutScreen: React.FC = () => {
         }
     };
 
-      const amount = 100;
-      const currency = "INR";
+    const amount = 100;
+    const currency = "INR";
 
     const handlePayment = () => {
-      var options = {
-        description: 'Order Payment',
-        image: 'https://i.imgur.com/3g7nmJC.png',
-        currency: currency,
-        key: 'rzp_live_tjwWB1t6xxjHG1',
-        amount: amount * 100, // Convert to paise
-        name: 'test order',
-        order_id: "", //Replace this with an order_id created using Orders API. Learn more at https://razorpay.com/docs/api/orders.
-        prefill: {
-          email: 'xyz@gmail.com',
-          contact: '9999999999',
-          name: 'User 1'
-        },
-        theme: { color: '#F37254' }
-      }
-  
-      RazorpayCheckout.open(options).then((data) => {
-        // handle success
-        alert(`Success: ${data.razorpay_payment_id}`);
-      })
-        .catch((error) => {
-          // handle failure
-          console.log(error)
-          alert(`Error: ${error.code} | ${error.description}`);
+        var options = {
+            description: 'Order Payment',
+            image: 'https://i.imgur.com/3g7nmJC.png',
+            currency: currency,
+            key: 'rzp_live_tjwWB1t6xxjHG1',
+            amount: amount * 100, // Convert to paise
+            name: 'test order',
+            order_id: "", //Replace this with an order_id created using Orders API. Learn more at https://razorpay.com/docs/api/orders.
+            prefill: {
+                email: 'xyz@gmail.com',
+                contact: '9999999999',
+                name: 'User 1'
+            },
+            theme: { color: '#F37254' }
+        }
+
+        RazorpayCheckout.open(options).then((data) => {
+            // handle success
+            alert(`Success: ${data.razorpay_payment_id}`);
         })
+            .catch((error) => {
+                // handle failure
+                console.log(error)
+                alert(`Error: ${error.code} | ${error.description}`);
+            })
     }
 
     // Handle form submission
@@ -366,46 +366,7 @@ const CheckoutScreen: React.FC = () => {
                         {error}
                     </Snackbar>
                 )}
-                <Card style={styles.orderCard}>
-                    <Card.Content>
-                        <Text style={styles.sectionTitle}>Your Order</Text>
-                        <View style={styles.orderHeader}>
-                            <Text style={styles.orderHeaderText}>Product</Text>
-                            <Text style={styles.orderHeaderText}>Price</Text>
-                        </View>
-                        {cartItems.map((item, index) => (
-                            <View key={index} style={styles.orderItem}>
-                                <Text style={styles.orderItemText}>
-                                    {item.name} × {item.quantity}
-                                </Text>
-                                <Text style={styles.orderItemPrice}>₹{item.subtotal.toFixed(2)}</Text>
-                                <Text style={styles.orderItemEach}>Each ₹{item.price.toFixed(2)}</Text>
-                            </View>
-                        ))}
-                        <View style={styles.orderTotal}>
-                            <Text style={styles.orderTotalText}>Subtotal</Text>
-                            <Text style={styles.orderTotalAmount}>₹{totalAmount}</Text>
-                        </View>
-                        <View style={styles.orderTotal}>
-                            <Text style={styles.orderTotalText}>Total</Text>
-                            <Text style={styles.orderTotalAmount}>₹{totalAmount}</Text>
-                        </View>
-                        <Text style={styles.privacyText}>
-                            Your personal data will be used to process your order, support your experience throughout this app, and for other purposes described in our privacy policy.
-                        </Text>
-                        <Text style={styles.shippingNote}>
-                            * Note: Shipping charges may vary. Our admin team will contact you to confirm your order and provide details about the shipping costs.
-                        </Text>
-                        <Button
-                            mode="contained"
-                            onPress={handleSubmit}
-                            style={styles.placeOrderButton}
-                            labelStyle={styles.placeOrderButtonText}
-                        >
-                            Place Order
-                        </Button>
-                    </Card.Content>
-                </Card>
+
                 <Card style={styles.billingCard}>
                     <Card.Content>
                         <Text style={styles.sectionTitle}>Billing Details</Text>
@@ -514,6 +475,47 @@ const CheckoutScreen: React.FC = () => {
                             numberOfLines={4}
                             placeholder="Notes about your order, e.g. special delivery instructions"
                         />
+                    </Card.Content>
+                </Card>
+
+                <Card style={styles.orderCard}>
+                    <Card.Content>
+                        <Text style={styles.sectionTitle}>Your Order</Text>
+                        <View style={styles.orderHeader}>
+                            <Text style={styles.orderHeaderText}>Product</Text>
+                            <Text style={styles.orderHeaderText}>Price</Text>
+                        </View>
+                        {cartItems.map((item, index) => (
+                            <View key={index} style={styles.orderItem}>
+                                <Text style={styles.orderItemText}>
+                                    {item.name} × {item.quantity}
+                                </Text>
+                                <Text style={styles.orderItemPrice}>₹{item.subtotal.toFixed(2)}</Text>
+                                <Text style={styles.orderItemEach}>Each ₹{item.price.toFixed(2)}</Text>
+                            </View>
+                        ))}
+                        <View style={styles.orderTotal}>
+                            <Text style={styles.orderTotalText}>Subtotal</Text>
+                            <Text style={styles.orderTotalAmount}>₹{totalAmount}</Text>
+                        </View>
+                        <View style={styles.orderTotal}>
+                            <Text style={styles.orderTotalText}>Total</Text>
+                            <Text style={styles.orderTotalAmount}>₹{totalAmount}</Text>
+                        </View>
+                        <Text style={styles.privacyText}>
+                            Your personal data will be used to process your order, support your experience throughout this app, and for other purposes described in our privacy policy.
+                        </Text>
+                        <Text style={styles.shippingNote}>
+                            * Note: Shipping charges may vary. Our admin team will contact you to confirm your order and provide details about the shipping costs.
+                        </Text>
+                        <Button
+                            mode="contained"
+                            onPress={handleSubmit}
+                            style={styles.placeOrderButton}
+                            labelStyle={styles.placeOrderButtonText}
+                        >
+                            Place Order
+                        </Button>
                     </Card.Content>
                 </Card>
             </ScrollView>

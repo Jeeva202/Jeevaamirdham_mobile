@@ -35,6 +35,7 @@ import {
 } from 'react-native-tab-view';
 
 import { REACT_API_URL } from '@/app-config'; // Ensure this path is correct
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // --- Helper Function ---
 const formatTime = (millis: number | undefined): string => {
@@ -67,11 +68,11 @@ type VideoItem = {
 type MediaTabProps = {
   isActive: boolean;
   isUserLoggedIn: boolean;
-  userPlan: string | null;
+  plan: string | null;
 };
 
 // --- Audio Player Tab ---
-const AudioPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn = true, userPlan = 'elite' }) => {
+const AudioPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn = true, plan = 'elite' }) => {
   const [audioData, setAudioData] = useState<AudioItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
@@ -153,7 +154,7 @@ const AudioPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn = tr
       setIsProcessingAudio(false);
       return;
     }
-    if (userPlan === "basic" && audio.id !== audioData[0]?.id) {
+    if (plan === "basic" && audio.id !== audioData[0]?.id) {
       alert("Upgrade to Elite plan to access this audio.");
       setIsProcessingAudio(false);
       return;
@@ -231,7 +232,7 @@ const AudioPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn = tr
         if (!isUserLoggedIn && currentAudio.id !== audioData[0]?.id) {
           alert("Please log in to play this audio."); setIsProcessingAudio(false); return;
         }
-        if (userPlan === "basic" && currentAudio.id !== audioData[0]?.id) {
+        if (plan === "basic" && currentAudio.id !== audioData[0]?.id) {
           alert("Upgrade to Elite plan to access this audio."); setIsProcessingAudio(false); return;
         }
         await soundRef.current.playAsync();
@@ -302,7 +303,7 @@ const AudioPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn = tr
 
       <List.Section style={styles.listSection}>
         {filteredAudios.map((item) => {
-          const isLocked = (userPlan === "basic" || !isUserLoggedIn) && item.id !== audioData[0]?.id;
+          const isLocked = (plan === "basic" || !isUserLoggedIn) && item.id !== audioData[0]?.id;
           const isCurrentlySelectedItem = currentAudio?.id === item.id;
           const itemIsCurrentlyProcessing = isProcessingAudio && isCurrentlySelectedItem;
 
@@ -319,7 +320,7 @@ const AudioPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn = tr
                 if (itemIsCurrentlyProcessing) return; 
 
                 if (isLocked && !isCurrentlySelectedItem) { 
-                  if (userPlan === "basic") alert("Upgrade to Elite plan to access this audio.");
+                  if (plan === "basic") alert("Upgrade to Elite plan to access this audio.");
                   else alert("Please log in to play this audio.");
                   return;
                 }
@@ -373,7 +374,7 @@ const AudioPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn = tr
                             onPress={() => { // Re-check conditions for direct button press
                                 if (itemIsCurrentlyProcessing) return;
                                 if (isLocked && !isCurrentlySelectedItem) {
-                                    if (userPlan === "basic") alert("Upgrade to Elite plan."); else alert("Please log in.");
+                                    if (plan === "basic") alert("Upgrade to Elite plan."); else alert("Please log in.");
                                     return;
                                 }
                                 if (isCurrentlySelectedItem) togglePlayPause(); else playAudio(item);
@@ -392,7 +393,7 @@ const AudioPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn = tr
 
 
 // --- Video Player Tab ---
-const VideoPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn, userPlan }) => {
+const VideoPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn, plan }) => {
   const [videoData, setVideoData] = useState<VideoItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
@@ -518,7 +519,7 @@ const VideoPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn, use
     if (!isUserLoggedIn && video.id !== videoData[0]?.id) {
       alert("Please log in to play this video."); return;
     }
-    if (userPlan === "basic" && video.id !== videoData[0]?.id) {
+    if (plan === "basic" && video.id !== videoData[0]?.id) {
       alert("Upgrade to Elite plan to access this video."); return;
     }
     if (currentVideo?.id === video.id && videoRef.current) {
@@ -643,7 +644,7 @@ const VideoPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn, use
         <>
           <Title style={styles.nextVideosTitle}>Up Next</Title>
           {nextVideos.map((item) => {
-            const isLocked = (userPlan === "basic" || !isUserLoggedIn) && item.id !== videoData[0]?.id;
+            const isLocked = (plan === "basic" || !isUserLoggedIn) && item.id !== videoData[0]?.id;
             return (
               <TouchableOpacity key={item.id} onPress={() => selectVideoToPlay(item)} disabled={isLocked}>
                 <Card style={[styles.videoCard, isLocked && styles.lockedItem]}>
@@ -682,36 +683,61 @@ const MediaPage: React.FC = () => {
     { key: 'video', title: 'Videos' },
   ]);
   const [isUserLoggedIn, setIsUserLoggedIn] = useState<boolean>(true);
-  const [userPlan, setUserPlan] = useState<string | null>('elite');
+  const [userPlan, setplan] = useState<string | null>('elite');
   const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(false);
-
+  const [plan, setPlan] = useState('')
+  const [userId, setUserId] = useState('')
   const theme = useTheme();
   const styles = useStyles(theme);
 
-  useEffect(() => {
-    const checkLoginStatus = async () => {
-      setIsLoadingAuth(true);
-      await new Promise(resolve => setTimeout(resolve, 500));
-      const loggedIn = true;
-      setIsUserLoggedIn(loggedIn);
-      if (loggedIn) {
-        try {
-          const response = await axios.get<{ plan: string }[]>(
-            `${REACT_API_URL}/getPlan`,
-            { params: { id: "user-id-from-auth" } } // Replace with actual user ID
-          );
-          setUserPlan(response.data[0]?.plan || 'basic');
-        } catch (error) {
-          console.error("Error fetching user plan:", error);
-          setUserPlan('basic');
-        }
-      } else {
-        setUserPlan(null);
-      }
-      setIsLoadingAuth(false);
-    };
-    // checkLoginStatus(); 
-  }, []);
+  // useEffect(() => {
+  //   const checkLoginStatus = async () => {
+  //     setIsLoadingAuth(true);
+  //     await new Promise(resolve => setTimeout(resolve, 500));
+  //     const loggedIn = true;
+  //     setIsUserLoggedIn(loggedIn);
+  //     if (loggedIn) {
+  //       try {
+  //         const response = await axios.get<{ plan: string }[]>(
+  //           `${REACT_API_URL}/getPlan`,
+  //           { params: { id: "user-id-from-auth" } } // Replace with actual user ID
+  //         );
+  //         setplan(response.data[0]?.plan || 'basic');
+  //       } catch (error) {
+  //         console.error("Error fetching user plan:", error);
+  //         setplan('basic');
+  //       }
+  //     } else {
+  //       setplan(null);
+  //     }
+  //     setIsLoadingAuth(false);
+  //   };
+  //   // checkLoginStatus(); 
+  // }, []);
+
+        React.useEffect(() => {
+        const fetchUserId = async () => {
+            try {
+                const userString = await AsyncStorage.getItem('user');
+                if (userString) {
+                    const userObj = JSON.parse(userString);
+                    const response = await axios.get(
+                    REACT_API_URL + `/getPlan`,
+                    {
+                        params: {
+                            id: userObj.userId
+                        },
+                    }
+                );
+                    setUserId(userObj.userId);
+                    setPlan(response.data[0].plan)
+                }
+            } catch (e) {
+                console.log('Failed to load user information.');
+            }
+        };
+        fetchUserId();
+    }, []);
 
   const renderScene = ({ route }: { route: TabRoute }) => {
     if (isLoadingAuth) {
@@ -719,9 +745,9 @@ const MediaPage: React.FC = () => {
     }
     switch (route.key) {
       case 'audio':
-        return <AudioPlayerTab isActive={index === 0} isUserLoggedIn={isUserLoggedIn} userPlan={userPlan} />;
+        return <AudioPlayerTab isActive={index === 0} isUserLoggedIn={isUserLoggedIn} plan={plan} />;
       case 'video':
-        return <VideoPlayerTab isActive={index === 1} isUserLoggedIn={isUserLoggedIn} userPlan={userPlan} />;
+        return <VideoPlayerTab isActive={index === 1} isUserLoggedIn={isUserLoggedIn} plan={plan} />;
       default:
         return null;
     }

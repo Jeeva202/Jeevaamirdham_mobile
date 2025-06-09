@@ -492,7 +492,7 @@
 
 import { REACT_API_URL } from '@/app-config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation } from '@react-navigation/native';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -524,6 +524,13 @@ const CartScreen: React.FC = () => {
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const totalAmount = cartItems.reduce((total, item) => total + item.subtotal, 0).toFixed(2);
 
+  const isFocused = useIsFocused();
+
+  useEffect(() => {
+    if (isFocused) {
+      fetchCart();
+    }
+  }, [isFocused]);
   // Fetch cart from API for logged-in user
   const fetchCartFromApi = async (userId: string) => {
     try {

@@ -1,55 +1,89 @@
 import { REACT_API_URL } from '@/app-config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
-import React from 'react';
-import { Image, StyleSheet, View } from 'react-native';
-import {
-  Button,
-  Divider,
-  Text,
-  Title,
-  useTheme
-} from 'react-native-paper';
+import React, { useState } from 'react';
+import { Alert, Image, StyleSheet, View } from 'react-native';
+import { Button, Divider, Text, Title } from 'react-native-paper';
 import { useDispatch } from 'react-redux';
 import { loginSuccess } from '../../redux/authSlice';
+
+GoogleSignin.configure({
+  webClientId: '622659185789-hh1l0djuvppd3qp92ug1mn69f5h5vnrr.apps.googleusercontent.com', // Get this from Google Cloud Console
+  offlineAccess: true,
+});
 
 const LoginScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const dispatch = useDispatch();
-  const { colors } = useTheme();
+  const [loading, setLoading] = useState(false);
 
   const handleGoogleLogin = async () => {
-    const dispatch = useDispatch();
-
     try {
-      // Simulate Google Login (replace this with real Google Auth later)
-      const userData = {
-        userId: '3152',
-        email: 'jeevaganesh.2812@gmail.com',
-      };
+      setLoading(true);
+      // Ensure user is signed out before attempting login
+      await GoogleSignin.signOut();
+      // Check if Google Play services are available
+      await GoogleSignin.hasPlayServices();
+      // Sign in with Google
+      const userInfo = await GoogleSignin.signIn();
+      const { id, email, name } = userInfo.data?.user ?? {};
+      if (!id || !email || !name) {
+        throw new Error('Google user information is incomplete.');
+      }
 
-      // 🔄 Fetch plan from API
-      const response = await axios.get(`${REACT_API_URL}/getPlan`, {
-        params: { id: userData.userId },
+      // Check if user exists in backend
+      const checkUserResponse = await axios.post(`${REACT_API_URL}/check-user`, { email });
+      let userId;
+
+      if (checkUserResponse.data.userExists) {
+        userId = checkUserResponse.data.id;
+      } else {
+        // Create new user if they don't exist
+        const createUserResponse = await axios.post(`${REACT_API_URL}/create-user`, { email, name });
+        if (createUserResponse.data.user) {
+          userId = createUserResponse.data.user.id;
+          Alert.alert('Success', `Welcome, ${name}!`);
+        } else {
+          throw new Error('Failed to create user');
+        }
+      }
+
+      // Fetch user plan
+      const planResponse = await axios.get(`${REACT_API_URL}/getPlan`, {
+        params: { id: userId },
       });
+      const userPlan = planResponse.data?.[0]?.plan || 'free';
 
-      const userPlan = response.data?.[0]?.plan || 'free'; // fallback plan
-
-      // ✅ Store combined user data in AsyncStorage
+      // Store user data in AsyncStorage
       const fullUserData = {
-        ...userData,
+        userId,
+        email,
+        name,
         plan: userPlan,
       };
-
       await AsyncStorage.setItem('user', JSON.stringify(fullUserData));
 
-      // ✅ Dispatch login success with full data
+      // Dispatch login success
       dispatch(loginSuccess(fullUserData));
 
-    } catch (error) {
-      console.error('Login failed:', error);
-      // optionally show a toast or alert
+      // Navigate to next screen or close login
+      navigation.goBack(); // Adjust based on your navigation flow
+
+    } catch (error: any) {
+      console.error('Google login failed:', error);
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        Alert.alert('Cancelled', 'Google login was cancelled.');
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        Alert.alert('Error', 'Sign-in is in progress, please wait.');
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        Alert.alert('Error', 'Google Play Services are not available.');
+      } else {
+        Alert.alert('Error', 'An error occurred during login. Please try again.');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -66,6 +100,8 @@ const LoginScreen: React.FC = () => {
         onPress={handleGoogleLogin}
         style={[{ backgroundColor: "#FFFFFF" }, styles.button]}
         labelStyle={[{ color: "#333" }, styles.buttonLabel]}
+        disabled={loading}
+        loading={loading}
       >
         Sign in with Google
       </Button>
@@ -74,19 +110,17 @@ const LoginScreen: React.FC = () => {
         <Text style={styles.orText}>Or sign in with</Text>
         <Divider style={styles.divider} />
       </View>
-
       <Button
         mode="contained"
         onPress={() => navigation.navigate('EmailPasswordLoginScreen')}
-        style={styles.button} 
+        style={styles.button}
         labelStyle={[{ color: "#fff" }, styles.buttonLabel]}
+        disabled={loading}
       >
         Continue with Email
       </Button>
-
       <Text style={styles.orText}>
-        by proceeding, you agree to our Privacy Policy and
-        Terms of Services
+        By proceeding, you agree to our Privacy Policy and Terms of Services
       </Text>
     </View>
   );

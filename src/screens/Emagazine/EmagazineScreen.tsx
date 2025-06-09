@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Dimensions,
   FlatList,
   ImageBackground,
@@ -85,7 +86,7 @@ export default function EmagazineScreen() {
         marginTop: index < 2 ? 0 : 20,
         transform: [{ scale: 1 }] 
       }]}
-      onPress={() => navigation.navigate('MonthSelection', { year: item.year })}
+      onPress={() => { item.year < 2022 ?  Alert.alert('Coming Soon', 'E-Magazine will be available soon for this year.') : navigation.navigate('MonthSelection', { year: item.year })}}
       activeOpacity={0.9}
     >
       <View style={styles.card}>

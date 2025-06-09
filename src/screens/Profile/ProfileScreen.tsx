@@ -1,3 +1,4 @@
+import { REACT_API_URL } from '@/app-config';
 import IndividualHeader from '@/src/components/header/IndividualHeader';
 import { logout } from '@/src/redux/authSlice';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -114,7 +115,7 @@ const ProfileScreen = () => {
   const { data: userData, isLoading: userDataLoading } = useQuery(
     ['userDetails', userId],
     async () => {
-      const response = await axios.get(`${process.env.REACT_APP_API_URL}/get-user-details`, {
+      const response = await axios.get(`${REACT_API_URL}/getUserDetails`, {
         params: { userId },
       });
       return response.data.data;

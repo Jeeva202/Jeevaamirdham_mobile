@@ -148,7 +148,7 @@ import { loginSuccess } from '../../redux/authSlice';
 
 const MultiStepLoginScreen: React.FC = () => {
     const [step, setStep] = useState<'enterEmail' | 'createPassword' | 'loginPassword' | 'otp' | 'newPassword'>('enterEmail');
-    const [email, setEmail] = useState('');
+    const [email, setEmail] = useState<string>('');
     const [username, setUsername] = useState('');
     const [userId, setUserId] = useState<number | null>(null);
     const [password, setPassword] = useState('');
@@ -160,6 +160,11 @@ const MultiStepLoginScreen: React.FC = () => {
     const handleFindUser = async () => {
         setError(null);
         try {
+
+            if (!email || !email.trim()) {
+                setError('Please enter your email.');
+                return;
+            }
             const response = await axios.post(`${REACT_API_URL}/login/find-user`, { email });
             const { isExistingUser, isPasswordAvailable, isNewUserCreated, user } = response.data;
 

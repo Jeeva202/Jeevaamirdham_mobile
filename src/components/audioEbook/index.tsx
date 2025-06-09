@@ -490,11 +490,17 @@ const AudioPlayerComponent = memo(({ audioData, plan, onUpgrade }: Props) => {
         backdropComponent={renderBackdrop}
       >
         <BottomSheetView style={styles.sheetContent}>
-          <Text style={styles.sheetTitle}>
-            {typeof transcriptSheetIndex === 'number' && audioData[transcriptSheetIndex]
-              ? audioData[transcriptSheetIndex].title
-              : ''}
-          </Text>
+          <View style={styles.sheetTitleContainer}>
+            <Text style={styles.sheetTitle}>
+              {typeof transcriptSheetIndex === 'number' && audioData[transcriptSheetIndex]
+                ? audioData[transcriptSheetIndex].title
+                : ''}
+            </Text>
+            <TouchableOpacity onPress={closeTranscriptSheet}>
+              <IconButton icon={'close'} />
+            </TouchableOpacity>
+          </View>
+
           <ScrollView style={{ flex: 1 }}>
             <Text style={styles.sheetTranscript}>
               {typeof transcriptSheetIndex === 'number' && audioData[transcriptSheetIndex]?.transcript
@@ -502,9 +508,9 @@ const AudioPlayerComponent = memo(({ audioData, plan, onUpgrade }: Props) => {
                 : 'No transcript available'}
             </Text>
           </ScrollView>
-          <Button mode="contained" onPress={closeTranscriptSheet} style={styles.sheetCloseButton}>
+          {/* <Button mode="contained" onPress={closeTranscriptSheet} style={styles.sheetCloseButton}>
             Close
-          </Button>
+          </Button> */}
         </BottomSheetView>
       </BottomSheetModal>
 
@@ -765,7 +771,7 @@ const styles = StyleSheet.create({
   // Bottom sheet styles
   sheetContent: {
     flex: 1,
-    padding: 24,
+    paddingHorizontal: 24,
   },
   sheetTitle: {
     fontSize: 20,
@@ -773,6 +779,12 @@ const styles = StyleSheet.create({
     color: '#F09300',
     marginBottom: 10,
     textAlign: 'center',
+  },
+  sheetTitleContainer: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
   },
   sheetTranscript: {
     fontSize: 16,
@@ -784,6 +796,8 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginHorizontal: 24,
     marginBottom: 8,
+    width: 150
+
   },
   transcriptTouchable: {
     paddingVertical: 4,

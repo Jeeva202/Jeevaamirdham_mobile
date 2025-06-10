@@ -94,16 +94,17 @@ const ProfileScreen = () => {
   useEffect(() => {
     const initialize = async () => {
       try {
-        const id = await AsyncStorage.getItem('user');
         const userData = await AsyncStorage.getItem('user');
         if (userData) {
           const parsedData = JSON.parse(userData);
-          setUserId(parsedData.userId || id || '');
-          setUserName(parsedData.username || 'Enter name' || '');
-          setUserEmail(parsedData.email || 'Enter email' || '');
-
+          setUserId(parsedData.userId || '');
+          setUserName(parsedData.username || 'Enter User');
+          setUserEmail(parsedData.email || 'Enter email');
+        } else {
+          setUserId('');
+          setUserName('Enter User');
+          setUserEmail('Enter email');
         }
-        // Use email as fallback for username
       } catch (err) {
         setError('Failed to load user info');
       }
@@ -249,8 +250,17 @@ const ProfileScreen = () => {
               </View>
               <Text style={styles.profileHeaderEmail} numberOfLines={1}>{userEmail || 'Enter email'}</Text>
             </View>
-            <TouchableOpacity onPress={()=> navigation.navigate('AccountDetails')}>
-            <Text style={styles.editButton}>Edit</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('AccountDetails', {
+              userId,
+              userData: formData,
+              userEmail,
+              userName,
+              setFormData,
+              userDataLoading,
+              missingFields,
+              setMissing: setMissingFields,
+            })}>
+              <Text style={styles.editButton}>Edit</Text>
             </TouchableOpacity>
           </View>
         </View>

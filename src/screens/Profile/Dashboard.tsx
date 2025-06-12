@@ -9,7 +9,6 @@ import { Animated, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Button, Card, List, Surface, Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { useQuery, useQueryClient } from 'react-query';
 
 const plans = [
   {
@@ -62,14 +61,18 @@ const DashboardScreen = ({ route }: DashboardScreenProps) => {
   const missingFields = route.params?.missingFields || false;
   const [userId, setUserId] = useState<string | null>(null);
   const [isExpired, setIsExpired] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
+  const [planData, setPlanData] = useState<typeof plans[0] | null>(null);
+  const [expiryData, setExpiryData] = useState<{ created_dt: string; expiry_dt: string } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [fadeAnim] = useState(new Animated.Value(0));
-  const queryClient = useQueryClient();
   const navigation = useNavigation<any>();
 
   useEffect(() => {
-    const getUserId = async () => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      setError(null);
+      let fetchedUserId: string | null = null;
       try {
         const userData = await AsyncStorage.getItem('user');
         if (!userData) {
@@ -80,80 +83,74 @@ const DashboardScreen = ({ route }: DashboardScreenProps) => {
           throw new Error('Invalid user data. Please log in again.');
         }
         setUserId(userObj.userId);
+        fetchedUserId = userObj.userId;
       } catch (err) {
         console.error('Error getting userId:', err);
         setError('Failed to load user data. Please log in again.');
-      } finally {
-        setIsMounted(true);
+        setIsLoading(false);
+        return;
       }
-    };
-    getUserId();
 
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 500,
-      useNativeDriver: true,
-    }).start();
-  }, []);
+      if (fetchedUserId) {
+        try {
+          // Fetch plan data
+          const { data: planResponse } = await axios.get(`${REACT_API_URL}/getPlanEvenItisExpired`, {
+            params: { id: fetchedUserId },
+          });
+          if (!planResponse || !planResponse[0]) {
+            throw new Error('No plan data received');
+          }
+          setIsExpired(planResponse[0].is_expired === 'not expired' ? false : true);
+          const matchedPlan = plans.find((e) => e.name === planResponse[0].plan);
+          if (!matchedPlan) {
+            throw new Error('No matching plan found');
+          }
+          setPlanData(matchedPlan);
+
+          // Fetch expiry data
+          const { data: expiryResponse } = await axios.get(`${REACT_API_URL}/getExpiry`, {
+            params: { id: fetchedUserId },
+          });
+          if (!expiryResponse || !expiryResponse[0]) {
+            throw new Error('No expiry data received');
+          }
+          setExpiryData(expiryResponse[0]);
+        } catch (err) {
+          console.error('Error fetching plan/expiry data:', err);
+          const getErrorMessage = (err: unknown) => {
+            if (err instanceof Error) return err.message;
+            if (typeof err === 'string') return err;
+            return 'Error loading subscription details';
+          };
+          setError(getErrorMessage(err));
+        } finally {
+          setIsLoading(false);
+        }
+      }
+
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }).start();
+    };
+
+    fetchData();
+  }, []); // Empty dependency array to run only once on mount
 
   const formatDate = (dateString: string | undefined | null): string => {
     if (!dateString) return 'N/A';
     return dayjs(dateString).format('MMMM D, YYYY');
   };
 
-  const { data: planData, isLoading: planIsLoading, error: planError } = useQuery({
-    queryFn: async () => {
-      const { data } = await axios.get(`${REACT_API_URL}/getPlanEvenItisExpired`, {
-        params: { id: userId },
-      });
-      if (!data || !data[0]) {
-        throw new Error('No plan data received');
-      }
-      setIsExpired(data[0].is_expired === 'not expired' ? false : true);
-      const matchedPlan = plans.find((e) => e.name === data[0].plan);
-      if (!matchedPlan) {
-        throw new Error('No matching plan found');
-      }
-      return matchedPlan;
-    },
-    queryKey: ['plan-detail', userId],
-    enabled: Boolean(userId) && isMounted,
-    retry: 3,
-  });
-
-  const { data: expiryData, isLoading: expiryIsLoading, error: expiryError } = useQuery({
-    queryFn: async () => {
-      const { data } = await axios.get(`${REACT_API_URL}/getExpiry`, {
-        params: { id: userId },
-      });
-      if (!data || !data[0]) {
-        throw new Error('No expiry data received');
-      }
-      return data[0];
-    },
-    queryKey: ['expiry-detail', userId],
-    enabled: Boolean(userId) && isMounted,
-    retry: 3,
-  });
-
-  useEffect(() => {
-    if (planError || expiryError) {
-      const getErrorMessage = (err: unknown) => {
-        if (err instanceof Error) return err.message;
-        if (typeof err === 'string') return err;
-        return 'Error loading subscription details';
-      };
-      setError(getErrorMessage(planError) || getErrorMessage(expiryError));
-    }
-  }, [planError, expiryError]);
-
   const handleRetry = () => {
+    // Re-trigger the useEffect to fetch data again
+    setUserId(null); // Reset userId to ensure useEffect runs again
+    setIsLoading(true);
     setError(null);
-    queryClient.invalidateQueries(['plan-detail', userId]);
-    queryClient.invalidateQueries(['expiry-detail', userId]);
   };
 
-  if (!isMounted || planIsLoading || expiryIsLoading) {
+  if (isLoading) {
     return (
       <View style={styles.loaderContainer}>
         <ActivityIndicator size="large" color="#F09300" />
@@ -186,6 +183,32 @@ const DashboardScreen = ({ route }: DashboardScreenProps) => {
   return (
     <SafeAreaView style={styles.container}>
       <IndividualHeader headerName='Dashboard' />
+
+              {/* Expired Subscription Banner - NEW */}
+      {isExpired && planData && (
+        <Animated.View style={[styles.expiredBanner, { opacity: fadeAnim }]}>
+          <View style={styles.bannerContent}>
+            <Icon name="info" size={24} color="#721c24" />
+            <View style={{ flex: 1, marginLeft: 10 }}>
+              <Text style={styles.bannerTitle}>Your {planData.name.toUpperCase()} Plan Has Expired!</Text>
+              {expiryData && (
+                <Text style={styles.bannerText}>
+                  Expired on: {formatDate(expiryData.expiry_dt)}
+                </Text>
+              )}
+            </View>
+            <Button
+              mode="text"
+              onPress={() => navigation.navigate('SubscriptionScreen')}
+              style={styles.bannerButton}
+              labelStyle={styles.bannerButtonLabel}
+            >
+              Renew Now
+            </Button>
+          </View>
+        </Animated.View>
+      )}
+
       {missingFields && (
         <Surface style={styles.alertSurface}>
           <Text style={styles.alertText}>
@@ -201,9 +224,10 @@ const DashboardScreen = ({ route }: DashboardScreenProps) => {
             <>
               {isExpired ? (
                 <Surface style={styles.expiredSurface}>
-                  <Text style={styles.alertTitle}>
-                    <Icon name="warning" size={24} color="#721c24" /> Your {planData.name.toUpperCase()} Plan has Expired
-                  </Text>
+                  <View style={styles.alertTitleContainer}>
+                    <Icon name="warning" size={22} color="#721c24" />
+                    <Text style={styles.alertTitle}>Your {planData.name.toUpperCase()} Plan has Expired</Text>
+                  </View>
                   <Text style={styles.alertText}>
                     Your Magazine Subscription period:{'\n'}
                     <Text style={styles.dateText}>From: {formatDate(expiryData.created_dt)}</Text>{'\n'}
@@ -211,7 +235,7 @@ const DashboardScreen = ({ route }: DashboardScreenProps) => {
                   </Text>
                   <Button
                     mode="contained"
-                    onPress={() =>{navigation.navigate('SubscriptionScreen')}}
+                    onPress={() => { navigation.navigate('SubscriptionScreen') }}
                     style={styles.renewButton}
                     icon="autorenew"
                   >
@@ -242,7 +266,7 @@ const DashboardScreen = ({ route }: DashboardScreenProps) => {
                     </Text>
                     <Button
                       mode="contained"
-                      onPress={() =>{navigation.navigate('SubscriptionScreen')}}
+                      onPress={() => { navigation.navigate('SubscriptionScreen') }}
                       style={styles.upgradeButton}
                       icon="trending-up"
                     >
@@ -258,7 +282,7 @@ const DashboardScreen = ({ route }: DashboardScreenProps) => {
         </Card.Content>
       </Card>
     </SafeAreaView>
-  );
+  );   
 };
 
 const styles = StyleSheet.create({
@@ -285,13 +309,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   sectionTitle: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 16,
     color: '#333',
   },
   planTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 16,
     color: '#333',
@@ -332,10 +356,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#e8f5e9',
   },
   alertTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#721c24',
-    marginBottom: 8,
+  },
+  alertTitleContainer:{
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8
   },
   alertText: {
     fontSize: 16,
@@ -413,6 +442,45 @@ const styles = StyleSheet.create({
     color: '#d32f2f',
     textAlign: 'center',
   },
+  // NEW STYLES FOR THE EXPIRED BANNER
+  expiredBanner: {
+    backgroundColor: '#ffdddd', // Very light red/pink for alert
+    padding: 10,
+    marginTop: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ffaaaa',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  bannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  bannerTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#a00000', // Dark red
+  },
+  bannerText: {
+    fontSize: 13,
+    color: '#a00000',
+    marginTop: 4,
+  },
+  bannerButton: {
+    paddingVertical: 5,
+    borderRadius: 5,
+  },
+  bannerButtonLabel: {
+    fontSize: 14,
+    color: '#dc3545',
+    fontWeight: 'bold',
+  },
+  // END NEW STYLES
 });
 
 export default DashboardScreen;

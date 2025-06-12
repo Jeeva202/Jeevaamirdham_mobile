@@ -31,6 +31,7 @@ const { width, height } = Dimensions.get('window');
 interface Props {
   audioData: AudioData[];
   plan: string;
+  isExpired: boolean;
   onUpgrade: () => void;
 }
 
@@ -51,7 +52,6 @@ interface AVPlaybackStatusError {
 type AVPlaybackStatus = AVPlaybackStatusSuccess | AVPlaybackStatusError;
 type NavigationProps = StackNavigationProp<RootStackParamList>;
 
-const disablePlanRestrictions = false;
 
 const formatTime = (millis?: number) => {
   if (!millis) return '0:00';
@@ -61,7 +61,7 @@ const formatTime = (millis?: number) => {
   return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
 };
 
-const AudioPlayerComponent = memo(({ audioData, plan, onUpgrade }: Props) => {
+const AudioPlayerComponent = memo(({ audioData, plan, isExpired, onUpgrade }: Props) => {
   const [currentAudioIndex, setCurrentAudioIndex] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isModalVisible, setModalVisible] = useState(false);
@@ -98,7 +98,7 @@ const AudioPlayerComponent = memo(({ audioData, plan, onUpgrade }: Props) => {
   const playAudio = async (index: number) => {
     if (isProcessingAudio && currentAudioIndex === index) return;
 
-    if (!disablePlanRestrictions && plan === 'basic' && index !== 0) {
+    if ((isExpired || plan === 'basic') && index !== 0) {
       navigation.navigate('SubscriptionScreen');
       // setUpgradeDialogVisible(true);
       return;
@@ -186,7 +186,7 @@ const AudioPlayerComponent = memo(({ audioData, plan, onUpgrade }: Props) => {
       if (isPlaying) {
         await soundRef.current.pauseAsync();
       } else {
-        if (!disablePlanRestrictions && plan === 'basic' && currentAudioIndex !== 0) {
+        if ( (isExpired || plan === 'basic') && currentAudioIndex !== 0) {
           setModalVisible(true);
           return;
         }
@@ -255,7 +255,7 @@ const AudioPlayerComponent = memo(({ audioData, plan, onUpgrade }: Props) => {
 
   const renderAudioCard = useCallback(
     (audio: AudioData, index: number) => {
-      const isLocked = !disablePlanRestrictions && plan === 'basic'
+      const isLocked = (isExpired || plan == 'basic') && index !== 0 
       const isCurrentlySelected = currentAudioIndex === index;
       const itemIsProcessing = isProcessingAudio && isCurrentlySelected;
 

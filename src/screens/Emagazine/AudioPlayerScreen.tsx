@@ -24,6 +24,7 @@ export default function AudioPlayerScreen() {
   const navigation = useNavigation<Props['navigation']>();
   const { year, month, audioData } = route.params;
   const [plan, setPlan] = useState('')
+  const [isExpired, setIsExpired] = useState(Boolean)
   const [userId, setUserId] = useState('')
 
   // const plan = useSelector((state: RootState) => state.user.plan);
@@ -42,7 +43,7 @@ export default function AudioPlayerScreen() {
                 if (userString) {
                     const userObj = JSON.parse(userString);
                     const response = await axios.get(
-                    REACT_API_URL + `/getPlan`,
+                    REACT_API_URL + `/getPlanEvenItisExpired`,
                     {
                         params: {
                             id: userObj.userId
@@ -51,6 +52,7 @@ export default function AudioPlayerScreen() {
                 );
                     setUserId(userObj.userId);
                     setPlan(response.data[0].plan)
+                    setIsExpired(response.data[0].is_expired == 'expired' ? true : false)
                 }
             } catch (e) {
                 console.log('Failed to load user information.');
@@ -112,6 +114,7 @@ export default function AudioPlayerScreen() {
         <AudioPlayerComponent
           audioData={fetchedAudio}
           plan={plan}
+          isExpired = {isExpired}
           onUpgrade={() => navigation.navigate('MagazineDetails', { year, month })}
         />
       )}

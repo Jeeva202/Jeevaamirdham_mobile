@@ -24,9 +24,7 @@ const DeleteAccountTab = () => {
       setIsLoading(true);
       try {
         await axios.post(`${REACT_API_URL}/deactivate_user`, { userId });
-        await AsyncStorage.removeItem('id');
-        await AsyncStorage.removeItem('username');
-        await AsyncStorage.removeItem('email');
+        await AsyncStorage.removeItem('user');
         setError('Account deleted successfully');
         (navigation as any).navigate('Main');
       } catch (err) {
@@ -51,8 +49,6 @@ const DeleteAccountTab = () => {
       <Card style={styles.mainCard}>
         <Card.Content>
           <View style={styles.content}>
-            {/* <Card style={styles.promptCard}> */}
-              {/* <Card.Content style={styles.promptContent}> */}
                 <Text style={styles.promptText}>
                   Are you sure you want to delete your account?
                 </Text>
@@ -87,8 +83,6 @@ const DeleteAccountTab = () => {
                     Cancel
                   </Button>
                 </View>
-              {/* </Card.Content> */}
-            {/* </Card> */}
           </View>
         </Card.Content>
       </Card>

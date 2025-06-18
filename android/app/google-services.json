@@ -1,1 +1,47 @@
-{"installed":{"client_id":"622659185789-hh1l0djuvppd3qp92ug1mn69f5h5vnrr.apps.googleusercontent.com","project_id":"norse-voice-445813-d9","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs"}}
+{
+  "project_info": {
+    "project_number": "68569373638",
+    "project_id": "jeevaamirdham-android",
+    "storage_bucket": "jeevaamirdham-android.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:68569373638:android:fe817b084653979dd8f0c7",
+        "android_client_info": {
+          "package_name": "com.jeevaamirdham.android"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "68569373638-slkt4qbiep32nd168gdee862311qcucu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.jeevaamirdham.android",
+            "certificate_hash": "6db0da9ab841568eb8d78e8b5d4e413e769c9216"
+          }
+        },
+        {
+          "client_id": "68569373638-0oneil6vgpdm15nmis4p53pfq9k5d7jq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCxty68E2lQg5lulS9KNOocIjEmxKDYblU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "622659185789-rue1itvqp2i8numvn6fe6oavpmggg481.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

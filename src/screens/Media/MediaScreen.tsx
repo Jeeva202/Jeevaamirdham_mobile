@@ -2,7 +2,6 @@ import Slider from '@react-native-community/slider';
 import { useFocusEffect } from '@react-navigation/native';
 import axios from 'axios';
 import { Audio, AVPlaybackStatus, AVPlaybackStatusError, AVPlaybackStatusSuccess, ResizeMode, Video } from 'expo-av';
-import { debounce } from 'lodash';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -417,13 +416,11 @@ const AudioPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn = tr
 //   const styles = useStyles(theme);
 
 //   // Debounced setCurrentVideo to reduce lag when switching categories
-//   // Using useCallback for the debounced function itself to prevent re-creation
-//   // which can cause issues with debounce's internal timer.
 //   const debouncedSetCurrentVideo = useCallback(
 //     debounce((video: VideoItem | null) => {
 //       setCurrentVideo(video);
 //     }, 250),
-//     [] // Empty dependency array means this function is created once
+//     []
 //   );
 
 //   // Clean up debounce on unmount
@@ -433,6 +430,7 @@ const AudioPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn = tr
 //     };
 //   }, [debouncedSetCurrentVideo]);
 
+//   // --- Data Fetching Effect ---
 //   // --- Data Fetching Effect ---
 //   useEffect(() => {
 //     const fetchVideoData = async () => {
@@ -449,7 +447,6 @@ const AudioPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn = tr
 //         const uniqueCategories = [...new Set(fetchedData.map(video => video.category))];
 //         setCategories(uniqueCategories);
 
-//         // Determine initial video to play
 //         let initialVideo: VideoItem | null = null;
 //         if (uniqueCategories.length > 0) {
 //           const firstCategory = uniqueCategories[0];
@@ -459,14 +456,17 @@ const AudioPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn = tr
 //             initialVideo = videosInFirstCategory[0];
 //           }
 //         } else if (fetchedData.length > 0) {
-//           setSelectedCategory(null); // No categories, so no selected category
+//           setSelectedCategory(null);
 //           initialVideo = fetchedData[0];
 //         } else {
 //           setSelectedCategory(null);
 //           initialVideo = null;
 //         }
-//         // Set current video directly, no need for debounce here as it's initial load
 //         setCurrentVideo(initialVideo);
+//         // REMOVE THIS LINE:
+//         // if (initialVideo) {
+//         //   setShouldAutoPlay(true);
+//         // }
 //       } catch (err: any) {
 //         console.error("Error fetching video data:", err);
 //         setError(`Failed to load video data: ${err.message || "Unknown error"}. Please try again later.`);
@@ -475,109 +475,126 @@ const AudioPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn = tr
 //       }
 //     };
 //     fetchVideoData();
-//   }, []); // Empty dependency array means this runs once on mount
-
-//   // --- Video Playback Management Effect ---
-//   // This effect handles loading/unloading the video source and controlling playback
+//   }, []);
+//   // --- Video Playback Control Effect (now reacts to currentVideo and shouldAutoPlay) ---
 //   useEffect(() => {
-//     const manageVideoSource = async () => {
-//       if (!videoRef.current) {
-//         // If ref is not available, exit early. This happens if component not yet mounted.
-//         console.warn("videoRef.current is null, cannot manage video source.");
-//         return;
-//       }
+//     const videoInstance = videoRef.current;
 
-//       // If there's a current video to play
+//     if (!videoInstance) {
+//       console.warn("videoRef.current is null in playback control effect. This should not happen if Video is always rendered.");
+//       return;
+//     }
+
+//     const managePlayback = async () => {
 //       if (currentVideo) {
-//         setIsVideoBuffering(true); // Indicate buffering while loading new video
-//         setIsVideoPlaying(false); // Assume not playing until loaded
-//         try {
-//           // Unload any previously loaded video
-//           await videoRef.current.unloadAsync();
-
-//           // Load the new video source
-//           // Only play if shouldAutoPlay is true (meaning user explicitly selected a video)
-//           await videoRef.current.loadAsync({ uri: currentVideo.videofile_url }, { shouldPlay: shouldAutoPlay });
-//           if (shouldAutoPlay) {
-//             setShouldAutoPlay(false); // Reset for next interaction
+//         // If a video is selected, manage its playback state.
+//         // Source is now handled by the <Video> component's `source` prop.
+//         setIsVideoBuffering(true); // Assume buffering until status update
+//         if (shouldAutoPlay) {
+//           console.log("Attempting to auto-play due to shouldAutoPlay.");
+//           try {
+//             await videoInstance.playAsync();
+//             setShouldAutoPlay(false); // Reset after attempting to play
+//           } catch (e) {
+//             console.error("Error auto-playing video:", e);
+//             // Error handling for playback already in onPlaybackStatusUpdate
 //           }
-//           setIsVideoBuffering(false); // Loading complete
-//         } catch (e: any) {
-//           console.error("Error loading video source:", e);
-//           alert(`Could not load video: ${currentVideo.title}. Error: ${e.message || "Unknown"}`);
-//           setIsVideoBuffering(false);
-//           setIsVideoPlaying(false);
 //         }
 //       } else {
-//         // If currentVideo is null (no video selected or all filtered out)
-//         // Unload existing video and reset states
+//         // If currentVideo is null (no video selected), ensure it's stopped.
+//         // This will effectively "unload" the previous video as the source prop will become null.
 //         try {
-//           await videoRef.current.unloadAsync();
+//           const status = await videoInstance.getStatusAsync();
+//           if (status.isLoaded) {
+//             await videoInstance.stopAsync(); // Stop and unload current media
+//           }
 //         } catch (e) {
-//           console.error("Error unloading video:", e);
+//           console.error("Error stopping video when currentVideo is null:", e);
 //         }
 //         setIsVideoPlaying(false);
 //         setIsVideoBuffering(false);
 //       }
 //     };
 
-//     // This effect should react to `currentVideo` changes.
-//     // `isActive` is also relevant for immediate pause/play on tab switch,
-//     // but the core loading/unloading is driven by `currentVideo`.
-//     manageVideoSource();
-//   }, [currentVideo]); // Re-run when currentVideo changes
+//     managePlayback();
+
+//     // Cleanup: Ensure video is stopped when component unmounts or currentVideo changes.
+//     return () => {
+//       const cleanupOnUnmountOrChange = async () => {
+//         if (videoInstance) {
+//           try {
+//             const status = await videoInstance.getStatusAsync();
+//             if (status.isLoaded && status.isPlaying) {
+//               await videoInstance.stopAsync(); // Stop and release resources
+//               setIsVideoPlaying(false);
+//               setIsVideoBuffering(false);
+//             }
+//           } catch (e) {
+//             console.error("Error stopping video on cleanup:", e);
+//           }
+//         }
+//       };
+//       cleanupOnUnmountOrChange();
+//     };
+//   }, [currentVideo, shouldAutoPlay]); // Re-run when currentVideo or shouldAutoPlay changes
+
 
 //   // --- Tab Active State Management (Pause/Play) ---
 //   useEffect(() => {
 //     const handleTabActivity = async () => {
-//       if (!videoRef.current) return;
+//       const videoInstance = videoRef.current;
+//       if (!videoInstance) return; // Should now always be available if component is mounted
 
 //       if (isActive) {
-//         // If tab becomes active and a video is selected and not already playing, attempt to play
-//         if (currentVideo && !isVideoPlaying) {
-//           console.log("VideoTab is now ACTIVE, attempting to play video.");
-//           // We only play if it was previously playing or if auto-play is specifically requested (selectVideoToPlay)
-//           // For a general tab activation, we resume if it was active before being paused by tab switch.
-//           // This logic can be refined based on desired UX (e.g., always resume last played video).
-//           // For now, it will only play if `shouldAutoPlay` was true, or if `isVideoPlaying` was true and it paused due to `!isActive`.
-//           const status = await videoRef.current.getStatusAsync();
-//           if (status.isLoaded && !status.isPlaying && status.positionMillis > 0) {
-//             // Resume if it was loaded and paused (e.g., due to tab switch or user action)
-//             videoRef.current.playAsync().catch(e => console.error("Error resuming video:", e));
-//           } else if (status.isLoaded && !status.isPlaying && shouldAutoPlay) {
-//             // Auto-play if a new video was just set and shouldAutoPlay is true
-//              videoRef.current.playAsync().catch(e => console.error("Error auto-playing video:", e));
-//              setShouldAutoPlay(false); // Reset
+//         // If tab becomes active and a video is selected, attempt to play/resume
+//         if (currentVideo) {
+//           console.log("VideoTab is now ACTIVE, attempting to play/resume video.");
+//           try {
+//             const status = await videoInstance.getStatusAsync();
+//             if (status.isLoaded && !status.isPlaying) {
+//               await videoInstance.playAsync();
+//             }
+//           } catch (e) {
+//             console.error("Error resuming video on tab activation:", e);
 //           }
 //         }
 //       } else {
 //         // If tab becomes inactive and video is playing, pause it
-//         if (isVideoPlaying) {
-//           console.log("VideoTab is now INACTIVE, pausing video.");
-//           videoRef.current.pauseAsync().catch(e => console.error("Error pausing video on tab switch:", e));
+//         console.log("VideoTab is now INACTIVE, pausing video.");
+//         try {
+//           const status = await videoInstance.getStatusAsync();
+//           if (status.isLoaded && status.isPlaying) {
+//             await videoInstance.pauseAsync();
+//           }
+//         } catch (e) {
+//           console.error("Error pausing video on tab switch:", e);
 //         }
 //       }
 //     };
 //     handleTabActivity();
-//   }, [isActive, currentVideo, isVideoPlaying, shouldAutoPlay]); // Depend on isActive, currentVideo, isVideoPlaying, and shouldAutoPlay
+//   }, [isActive, currentVideo]); // Depend on isActive and currentVideo (isVideoPlaying comes from status update)
 
 //   // --- Focus Effect for Navigation Away ---
 //   useFocusEffect(
 //     useCallback(() => {
 //       return async () => {
-//         if (videoRef.current) {
+//         const videoInstance = videoRef.current;
+//         if (videoInstance) {
 //           // Pause and unload when screen loses focus (e.g., navigating to another screen)
-//           // This is a stronger "reset" than just tab inactivity.
+//           console.log("Screen losing focus, stopping video.");
 //           try {
-//             await videoRef.current.pauseAsync();
-//             await videoRef.current.unloadAsync();
+//             const status = await videoInstance.getStatusAsync();
+//             if (status.isLoaded) {
+//               await videoInstance.stopAsync(); // Stop and unload completely
+//             }
 //           } catch (e) {
-//             console.error("Error pausing/unloading video on focus loss:", e);
+//             console.error("Error stopping video on focus loss:", e);
 //           }
 //         }
 //         setIsVideoPlaying(false);
 //         setIsVideoBuffering(false);
 //         setCurrentVideo(null); // Clear current video when leaving the screen
+//         setShouldAutoPlay(false); // Reset auto-play flag
 //       };
 //     }, [])
 //   );
@@ -598,13 +615,15 @@ const AudioPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn = tr
 //     if (currentVideo?.id === video.id && videoRef.current) {
 //       videoRef.current.getStatusAsync().then(status => {
 //         if (status.isLoaded && !status.isPlaying) {
+//           console.log("Playing same video which was paused.");
 //           videoRef.current?.playAsync().catch(e => console.error("Error playing same video:", e));
 //         }
 //       });
 //     } else {
 //       // If a different video is selected, set it as current and enable auto-play
-//       setShouldAutoPlay(true); // Signal that the next load should auto-play
-//       debouncedSetCurrentVideo(video); // Use debounced setter
+//       console.log("New video selected, setting to auto-play.");
+//       setShouldAutoPlay(true); // <--- KEEP THIS HERE
+//       debouncedSetCurrentVideo(video);
 //     }
 //   };
 
@@ -661,9 +680,7 @@ const AudioPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn = tr
 //               setSelectedCategory(category);
 //               const videosInNewCategory = videoData.filter(v => v.category === category);
 //               if (videosInNewCategory.length > 0) {
-//                 // When switching categories, select the first video of that category
-//                 // and enable auto-play for it.
-//                 setShouldAutoPlay(true);
+//                 setShouldAutoPlay(true); // <--- KEEP THIS HERE
 //                 debouncedSetCurrentVideo(videosInNewCategory[0]);
 //               } else {
 //                 debouncedSetCurrentVideo(null); // No videos in this category
@@ -680,31 +697,33 @@ const AudioPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn = tr
 //       {/* Main Video Player Section */}
 //       <Surface style={styles.mainVideoSurface}>
 //         <View style={styles.videoContainer}>
-//           {currentVideo ? (
-//             <Video
-//               ref={videoRef}
-//               style={styles.video}
-//               source={{ uri: currentVideo.videofile_url }} // Source is managed by the useEffect now
-//               useNativeControls
-//               resizeMode={ResizeMode.CONTAIN}
-//               onPlaybackStatusUpdate={onPlaybackStatusUpdate}
-//               onError={(errorMessage) => { // This is for player setup errors mainly
-//                 console.error("Video Player Instance Error:", errorMessage);
-//                 setIsVideoBuffering(false);
-//                 setIsVideoPlaying(false);
-//                 if (isActive) alert(`Error initializing video player for: ${currentVideo.title}`);
-//               }}
-//             />
-//           ) : (
-//             // Placeholder when no video is selected or available in filtered list
-//             <View style={[styles.video, { backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' }]}>
-//               <IconButton icon="play-circle-outline" size={64} iconColor={theme.colors.primary} style={{ alignSelf: 'center' }} />
-//             </View>
-//           )}
+//           {/* Always render the Video component */}
+//           <Video
+//             ref={videoRef}
+//             style={styles.video}
+//             // Source is managed by the useEffect now, setting it to null unloads any prior video
+//             source={currentVideo ? { uri: currentVideo.videofile_url } : undefined}
+//             useNativeControls
+//             resizeMode={ResizeMode.CONTAIN}
+//             onPlaybackStatusUpdate={onPlaybackStatusUpdate}
+//             onError={(errorMessage) => { // This is for player setup errors mainly
+//               console.error("Video Player Instance Error:", errorMessage);
+//               setIsVideoBuffering(false);
+//               setIsVideoPlaying(false);
+//               if (isActive && currentVideo) alert(`Error initializing video player for: ${currentVideo.title}`);
+//             }}
+//           />
 
 //           {isVideoBuffering && (
 //             <View style={styles.videoLoadingOverlay}>
 //               <ActivityIndicator size="large" color={theme.colors.onPrimary} />
+//             </View>
+//           )}
+
+//           {/* Placeholder for when no current video is selected */}
+//           {!currentVideo && (
+//             <View style={[styles.video, { position: 'absolute', backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' }]}>
+//               <IconButton icon="play-circle-outline" size={64} iconColor={theme.colors.primary} style={{ alignSelf: 'center' }} />
 //             </View>
 //           )}
 //         </View>
@@ -757,73 +776,47 @@ const AudioPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn = tr
 // };
 
 const VideoPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn, plan }) => {
+  const theme = useTheme();
+  const styles = useStyles(theme);
+  const videoRef = useRef<Video>(null);
+  const shouldPlayRef = useRef<boolean>(false);
   const [videoData, setVideoData] = useState<VideoItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
   const [currentVideo, setCurrentVideo] = useState<VideoItem | null>(null);
-  const [isLoadingList, setIsLoadingList] = useState<boolean>(true); // For fetching list
+  const [isLoadingList, setIsLoadingList] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isVideoBuffering, setIsVideoBuffering] = useState(false);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  const [shouldAutoPlay, setShouldAutoPlay] = useState(false);
 
-  const videoRef = useRef<Video>(null);
-
-  const theme = useTheme();
-  const styles = useStyles(theme);
-
-  // Debounced setCurrentVideo to reduce lag when switching categories
-  const debouncedSetCurrentVideo = useCallback(
-    debounce((video: VideoItem | null) => {
-      setCurrentVideo(video);
-    }, 250),
-    []
-  );
-
-  // Clean up debounce on unmount
-  useEffect(() => {
-    return () => {
-      debouncedSetCurrentVideo.cancel();
-    };
-  }, [debouncedSetCurrentVideo]);
-
-  // --- Data Fetching Effect ---
+  // Fetch video data
   useEffect(() => {
     const fetchVideoData = async () => {
       setIsLoadingList(true);
       setError(null);
       try {
-        const response = await fetch(`${REACT_API_URL}/audio-video-page/all_video_data`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const fetchedData: VideoItem[] = await response.json();
+        const response = await axios.get<VideoItem[]>(`${REACT_API_URL}/audio-video-page/all_video_data`);
+        const fetchedData = response.data;
         setVideoData(fetchedData);
 
         const uniqueCategories = [...new Set(fetchedData.map(video => video.category))];
         setCategories(uniqueCategories);
 
-        // Determine initial video to play
         let initialVideo: VideoItem | null = null;
         if (uniqueCategories.length > 0) {
           const firstCategory = uniqueCategories[0];
           setSelectedCategory(firstCategory);
           const videosInFirstCategory = fetchedData.filter(v => v.category === firstCategory);
-          if (videosInFirstCategory.length > 0) {
-            initialVideo = videosInFirstCategory[0];
-          }
+          initialVideo = videosInFirstCategory[0] || null;
         } else if (fetchedData.length > 0) {
-          setSelectedCategory(null); // No categories, so no selected category
+          setSelectedCategory(null);
           initialVideo = fetchedData[0];
         } else {
           setSelectedCategory(null);
           initialVideo = null;
         }
         setCurrentVideo(initialVideo);
-        // If an initial video is set, we might want to auto-play it
-        if (initialVideo) {
-          setShouldAutoPlay(true);
-        }
+        shouldPlayRef.current = !!initialVideo; // Autoplay initial video if available
       } catch (err: any) {
         console.error("Error fetching video data:", err);
         setError(`Failed to load video data: ${err.message || "Unknown error"}. Please try again later.`);
@@ -832,134 +825,91 @@ const VideoPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn, pla
       }
     };
     fetchVideoData();
-  }, []); // Empty dependency array means this runs once on mount
+  }, []);
 
-  // --- Video Playback Control Effect (now reacts to currentVideo and shouldAutoPlay) ---
+  // Safe cleanup function
+  const safeCleanup = useCallback(async () => {
+    if (!videoRef.current) return;
+    try {
+      const status = await videoRef.current.getStatusAsync();
+      if (status.isLoaded) {
+        await videoRef.current.stopAsync();
+        await videoRef.current.unloadAsync();
+      }
+    } catch (e: any) {
+      if (!e.message.includes("Cannot complete operation because the Video component has not yet loaded")) {
+        console.error("Error during safe cleanup:", e);
+      }
+    }
+  }, []);
+
+  // Manage video playback and source
   useEffect(() => {
     const videoInstance = videoRef.current;
+    if (!videoInstance) return;
 
-    if (!videoInstance) {
-      console.warn("videoRef.current is null in playback control effect. This should not happen if Video is always rendered.");
-      return;
-    }
-
-    const managePlayback = async () => {
-      if (currentVideo) {
-        // If a video is selected, manage its playback state.
-        // Source is now handled by the <Video> component's `source` prop.
-        setIsVideoBuffering(true); // Assume buffering until status update
-        if (shouldAutoPlay) {
-          console.log("Attempting to auto-play due to shouldAutoPlay.");
-          try {
+    const manageVideo = async () => {
+      try {
+        if (currentVideo) {
+          setIsVideoBuffering(true);
+          await videoInstance.loadAsync({ uri: currentVideo.videofile_url }, { shouldPlay: shouldPlayRef.current && isActive });
+          if (shouldPlayRef.current && isActive) {
             await videoInstance.playAsync();
-            setShouldAutoPlay(false); // Reset after attempting to play
-          } catch (e) {
-            console.error("Error auto-playing video:", e);
-            // Error handling for playback already in onPlaybackStatusUpdate
           }
+        } else {
+          await safeCleanup();
         }
-      } else {
-        // If currentVideo is null (no video selected), ensure it's stopped.
-        // This will effectively "unload" the previous video as the source prop will become null.
-        try {
-          const status = await videoInstance.getStatusAsync();
-          if (status.isLoaded) {
-            await videoInstance.stopAsync(); // Stop and unload current media
-          }
-        } catch (e) {
-          console.error("Error stopping video when currentVideo is null:", e);
-        }
-        setIsVideoPlaying(false);
+      } catch (e) {
+        console.error("Error managing video:", e);
         setIsVideoBuffering(false);
+        setIsVideoPlaying(false);
+        if (currentVideo && isActive) {
+          alert(`Error loading video: ${currentVideo.title}`);
+        }
       }
     };
 
-    managePlayback();
+    manageVideo();
 
-    // Cleanup: Ensure video is stopped when component unmounts or currentVideo changes.
     return () => {
-      const cleanupOnUnmountOrChange = async () => {
-        if (videoInstance) {
-          try {
-            const status = await videoInstance.getStatusAsync();
-            if (status.isLoaded && status.isPlaying) {
-              await videoInstance.stopAsync(); // Stop and release resources
-              setIsVideoPlaying(false);
-              setIsVideoBuffering(false);
-            }
-          } catch (e) {
-            console.error("Error stopping video on cleanup:", e);
-          }
-        }
-      };
-      cleanupOnUnmountOrChange();
+      safeCleanup();
     };
-  }, [currentVideo, shouldAutoPlay]); // Re-run when currentVideo or shouldAutoPlay changes
+  }, [currentVideo, isActive, safeCleanup]);
 
-
-  // --- Tab Active State Management (Pause/Play) ---
+  // Handle tab active/inactive state
   useEffect(() => {
     const handleTabActivity = async () => {
-      const videoInstance = videoRef.current;
-      if (!videoInstance) return; // Should now always be available if component is mounted
+      if (!videoRef.current || !currentVideo) return;
 
-      if (isActive) {
-        // If tab becomes active and a video is selected, attempt to play/resume
-        if (currentVideo) {
-          console.log("VideoTab is now ACTIVE, attempting to play/resume video.");
-          try {
-            const status = await videoInstance.getStatusAsync();
-            if (status.isLoaded && !status.isPlaying) {
-              await videoInstance.playAsync();
-            }
-          } catch (e) {
-            console.error("Error resuming video on tab activation:", e);
-          }
+      try {
+        const status = await videoRef.current.getStatusAsync();
+        if (isActive && shouldPlayRef.current && status.isLoaded && !status.isPlaying) {
+          await videoRef.current.playAsync();
+        } else if (!isActive && status.isLoaded && status.isPlaying) {
+          await videoRef.current.pauseAsync();
         }
-      } else {
-        // If tab becomes inactive and video is playing, pause it
-        console.log("VideoTab is now INACTIVE, pausing video.");
-        try {
-          const status = await videoInstance.getStatusAsync();
-          if (status.isLoaded && status.isPlaying) {
-            await videoInstance.pauseAsync();
-          }
-        } catch (e) {
-          console.error("Error pausing video on tab switch:", e);
-        }
+      } catch (e: any) {
+        console.error("Error handling tab activity:", e);
       }
     };
     handleTabActivity();
-  }, [isActive, currentVideo]); // Depend on isActive and currentVideo (isVideoPlaying comes from status update)
+  }, [isActive, currentVideo]);
 
-  // --- Focus Effect for Navigation Away ---
+  // Handle navigation focus
   useFocusEffect(
     useCallback(() => {
-      return async () => {
-        const videoInstance = videoRef.current;
-        if (videoInstance) {
-          // Pause and unload when screen loses focus (e.g., navigating to another screen)
-          console.log("Screen losing focus, stopping video.");
-          try {
-            const status = await videoInstance.getStatusAsync();
-            if (status.isLoaded) {
-              await videoInstance.stopAsync(); // Stop and unload completely
-            }
-          } catch (e) {
-            console.error("Error stopping video on focus loss:", e);
-          }
-        }
+      return () => {
+        safeCleanup();
         setIsVideoPlaying(false);
         setIsVideoBuffering(false);
-        setCurrentVideo(null); // Clear current video when leaving the screen
-        setShouldAutoPlay(false); // Reset auto-play flag
+        setCurrentVideo(null);
+        shouldPlayRef.current = false;
       };
-    }, [])
+    }, [safeCleanup])
   );
 
-  // --- Video Selection Logic ---
-  const selectVideoToPlay = (video: VideoItem) => {
-    // Check for login/plan restrictions
+  // Video selection logic
+  const selectVideoToPlay = useCallback((video: VideoItem) => {
     if (!isUserLoggedIn && video.id !== videoData[0]?.id) {
       alert("Please log in to play this video.");
       return;
@@ -969,32 +919,28 @@ const VideoPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn, pla
       return;
     }
 
-    // If the same video is selected and it's paused, play it
     if (currentVideo?.id === video.id && videoRef.current) {
       videoRef.current.getStatusAsync().then(status => {
         if (status.isLoaded && !status.isPlaying) {
-          console.log("Playing same video which was paused.");
           videoRef.current?.playAsync().catch(e => console.error("Error playing same video:", e));
+          setIsVideoPlaying(true);
         }
       });
     } else {
-      // If a different video is selected, set it as current and enable auto-play
-      console.log("New video selected, setting to auto-play.");
-      setShouldAutoPlay(true); // Signal that the next load should auto-play
-      debouncedSetCurrentVideo(video); // Use debounced setter
+      shouldPlayRef.current = true; // Enable autoplay for new video
+      setCurrentVideo(video);
     }
-  };
+  }, [currentVideo, isUserLoggedIn, plan, videoData]);
 
-  // --- Playback Status Update Handler ---
+  // Playback status update
   const onPlaybackStatusUpdate = useCallback((status: AVPlaybackStatus) => {
     if (!status.isLoaded) {
       if (status.error) {
         console.error(`Video Playback Error: ${status.error}`);
         setIsVideoBuffering(false);
         setIsVideoPlaying(false);
-        // Only alert if it's the current video and the tab is active
         if (currentVideo && isActive) {
-          alert(`An error occurred while playing ${currentVideo?.title}. Error: ${status.error}`);
+          alert(`An error occurred while playing ${currentVideo.title}. Error: ${status.error}`);
         }
       }
       return;
@@ -1003,13 +949,18 @@ const VideoPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn, pla
     setIsVideoPlaying(status.isPlaying);
     if (status.didJustFinish) {
       setIsVideoPlaying(false);
-      // Optionally, you could automatically play the next video here
+      shouldPlayRef.current = false;
     }
-  }, [currentVideo, isActive]); // Depend on currentVideo and isActive for accurate alerts
+  }, [currentVideo, isActive]);
 
-  // --- Render Logic for Loading, Error, No Content ---
+  // Render logic
   if (isLoadingList) {
-    return <View style={styles.centered}><ActivityIndicator size="large" color={theme.colors.primary} /><Text style={{ marginTop: 10, color: theme.colors.onSurface }}>Loading Videos...</Text></View>;
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text style={{ marginTop: 10, color: theme.colors.onSurface }}>Loading Videos...</Text>
+      </View>
+    );
   }
   if (error) {
     return <View style={styles.centered}><Text style={styles.errorText}>{error}</Text></View>;
@@ -1018,13 +969,11 @@ const VideoPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn, pla
     return <View style={styles.centered}><Text style={{ color: theme.colors.onSurface }}>No video content available.</Text></View>;
   }
 
-  // Filter videos for display
   const filteredVideos = selectedCategory ? videoData.filter(video => video.category === selectedCategory) : videoData;
   const nextVideos = filteredVideos.filter(v => v.id !== currentVideo?.id);
 
   return (
     <ScrollView style={styles.tabContainer} contentContainerStyle={{ paddingBottom: 20 }}>
-      {/* Category Chips */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -1038,10 +987,11 @@ const VideoPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn, pla
               setSelectedCategory(category);
               const videosInNewCategory = videoData.filter(v => v.category === category);
               if (videosInNewCategory.length > 0) {
-                setShouldAutoPlay(true);
-                debouncedSetCurrentVideo(videosInNewCategory[0]);
+                shouldPlayRef.current = true; // Autoplay first video in new category
+                setCurrentVideo(videosInNewCategory[0]);
               } else {
-                debouncedSetCurrentVideo(null); // No videos in this category
+                setCurrentVideo(null);
+                shouldPlayRef.current = false;
               }
             }}
             style={[styles.categoryChip, selectedCategory === category && { backgroundColor: theme.colors.primary }]}
@@ -1052,40 +1002,33 @@ const VideoPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn, pla
         ))}
       </ScrollView>
 
-      {/* Main Video Player Section */}
       <Surface style={styles.mainVideoSurface}>
         <View style={styles.videoContainer}>
-          {/* Always render the Video component */}
           <Video
             ref={videoRef}
             style={styles.video}
-            // Source is managed by the useEffect now, setting it to null unloads any prior video
             source={currentVideo ? { uri: currentVideo.videofile_url } : undefined}
             useNativeControls
             resizeMode={ResizeMode.CONTAIN}
             onPlaybackStatusUpdate={onPlaybackStatusUpdate}
-            onError={(errorMessage) => { // This is for player setup errors mainly
+            onError={(errorMessage) => {
               console.error("Video Player Instance Error:", errorMessage);
               setIsVideoBuffering(false);
               setIsVideoPlaying(false);
               if (isActive && currentVideo) alert(`Error initializing video player for: ${currentVideo.title}`);
             }}
           />
-
           {isVideoBuffering && (
             <View style={styles.videoLoadingOverlay}>
               <ActivityIndicator size="large" color={theme.colors.onPrimary} />
             </View>
           )}
-
-          {/* Placeholder for when no current video is selected */}
           {!currentVideo && (
             <View style={[styles.video, { position: 'absolute', backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' }]}>
               <IconButton icon="play-circle-outline" size={64} iconColor={theme.colors.primary} style={{ alignSelf: 'center' }} />
             </View>
           )}
         </View>
-
         <Card.Content style={styles.mainVideoInfo}>
           <Title style={styles.videoTitleMain} numberOfLines={1}>
             {currentVideo ? currentVideo.title : (filteredVideos.length > 0 ? "No Video Selected" : "No videos available")}
@@ -1096,7 +1039,6 @@ const VideoPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn, pla
         </Card.Content>
       </Surface>
 
-      {/* Up Next Videos List */}
       {nextVideos.length > 0 && (
         <>
           <Title style={styles.nextVideosTitle}>Up Next</Title>
@@ -1425,4 +1367,4 @@ const useStyles = (theme: MD3Theme) => StyleSheet.create({
 
 
 
-export default MediaPage;
+export default MediaPage;  

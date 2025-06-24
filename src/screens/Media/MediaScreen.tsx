@@ -816,7 +816,7 @@ const VideoPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn, pla
           initialVideo = null;
         }
         setCurrentVideo(initialVideo);
-        shouldPlayRef.current = !!initialVideo; // Autoplay initial video if available
+      shouldPlayRef.current = false; // Reset autoplay flag
       } catch (err: any) {
         console.error("Error fetching video data:", err);
         setError(`Failed to load video data: ${err.message || "Unknown error"}. Please try again later.`);

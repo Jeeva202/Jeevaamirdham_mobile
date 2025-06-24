@@ -1,15 +1,19 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
-import React from "react";
-import { useSelector } from "react-redux";
+import React, { useEffect, useState } from "react";
 // Auth Screens
 import LoginScreen from "../screens/AuthScreen/LoginScreen";
 import SignupScreen from "../screens/AuthScreen/SignupScreen";
 // App Header
 import AppHeader from "../components/header/Appheader";
 // Extra Screens
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ActivityIndicator, View } from "react-native";
+import { useDispatch, useSelector } from "react-redux";
 import BookDetailScreen from "../components/bookDetails/BookDetailScreen";
 import SubscriptionScreen from "../components/subscription";
+import { loginSuccess, logout } from "../redux/authSlice";
+import { RootState } from "../redux/store";
 import CreatePasswordScreen from "../screens/AuthScreen/CreatePasswordScreen";
 import EmailPasswordLoginScreen from "../screens/AuthScreen/Email_Password_login";
 import EmailScreen from "../screens/AuthScreen/EmailScreen";
@@ -60,8 +64,45 @@ const ProfileStack = () => (
 
 const AppNavigator = () => {
   // Get auth state from Redux
-  const { isAuthenticated } = useSelector((state: any) => state.auth);
+  const  isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+    const dispatch = useDispatch();
 
+    // Use a loading state specifically for the initial async storage check
+    const [initialLoading, setInitialLoading] = useState<boolean>(true);
+
+    useEffect(() => {
+        const loadUserFromStorage = async () => {
+            try {
+                const userDataString = await AsyncStorage.getItem('user');
+                if (userDataString) {
+                    const userData = JSON.parse(userDataString);
+                    // Dispatch loginSuccess if user data is found
+                    dispatch(loginSuccess(userData));
+                } else {
+                    // If no user data in storage, ensure Redux state is logged out
+                    dispatch(logout());
+                }
+            } catch (e) {
+                console.error("Failed to load user from AsyncStorage:", e);
+                // In case of an error, assume not authenticated for safety
+                dispatch(logout());
+            } finally {
+                // Once the check is complete, turn off initial loading
+                setInitialLoading(false);
+            }
+        };
+
+        loadUserFromStorage();
+    }, [dispatch]); // Depend on dispatch to avoid lint warnings, though it's stable
+
+    // Show a loading indicator while checking AsyncStorage
+    if (initialLoading) {
+        return (
+            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                <ActivityIndicator size="large" color="#e53935" />
+            </View>
+        );
+    }
   return (
     <Stack.Navigator screenOptions={{ cardStyle: { backgroundColor: "#f9e5ab" } }}>
       {isAuthenticated ? (

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "731103601834",
+    "project_id": "jeevaamirdham-app",
+    "storage_bucket": "jeevaamirdham-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:731103601834:android:4c540b86a408845fc09cd3",
+        "android_client_info": {
+          "package_name": "com.jeevaamirdham.android"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyASnSULQk5Faz8YyoW0mlhkK892RP9lD-w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

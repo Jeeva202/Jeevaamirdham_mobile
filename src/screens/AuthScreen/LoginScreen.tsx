@@ -3,7 +3,7 @@ import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-si
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import React, { useState } from 'react';
-import { Alert, Image, StyleSheet, View } from 'react-native';
+import { Alert, Image, Linking, StyleSheet, View } from 'react-native';
 import { Button, Divider, Text, Title } from 'react-native-paper';
 import { useDispatch } from 'react-redux';
 import { REACT_API_URL } from '../../../app-config';
@@ -126,13 +126,11 @@ const LoginScreen: React.FC = () => {
       <Text style={styles.orText}>
         By proceeding, you agree to our
         <Text style={{ color: '#E68E00' }} onPress={() => {
-          // @ts-ignore
-          navigation.navigate('WebViewScreen', { url: 'https://www.jeevaamirdham.org/privacyPolicy', title: 'Privacy Policy' });
+          Linking.openURL('https://www.jeevaamirdham.org/privacyPolicy');
         }}> Privacy Policy </Text>
         and
         <Text style={{ color: '#E68E00' }} onPress={() => {
-          // @ts-ignore
-          navigation.navigate('WebViewScreen', { url: 'https://www.jeevaamirdham.org/termsAndCondition', title: 'Terms and Conditions' });
+          Linking.openURL('https://www.jeevaamirdham.org/termsAndCondition');
         }}> Terms & Conditions</Text>
       </Text>
     </View>

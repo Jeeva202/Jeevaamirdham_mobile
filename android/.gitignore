@@ -11,6 +11,8 @@ local.properties
 *.iml
 *.hprof
 .cxx/
+.google-services.json
 
 # Bundle artifacts
 *.jsbundle
+.google-services.json

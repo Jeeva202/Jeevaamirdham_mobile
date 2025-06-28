@@ -122,7 +122,7 @@ const YourOrder: React.FC = () => {
             screen: 'Cart',
         });
     };
-    
+
     // Simple Cart Modal Component
     const CartModal: React.FC<CartModalProps> = ({ visible, onClose }) => {
         if (!visible) return null;
@@ -155,21 +155,27 @@ const YourOrder: React.FC = () => {
 
     if (isError || error) {
         return (
-            <Card style={styles.emptyCard}>
-                <Card.Content style={styles.centered}>
-                    <Text style={styles.emptyText}>{error || (queryError instanceof Error ? queryError.message : 'Failed to load orders.')}</Text>
-                </Card.Content>
-            </Card>
+            <SafeAreaView style={styles.safeArea}>
+                <IndividualHeader headerName='Your Orders' />
+
+                <Card style={styles.emptyCard}>
+                    <Card.Content style={styles.centered}>
+                        <Text style={styles.emptyText}>{error || (queryError instanceof Error ? queryError.message : 'Failed to load orders.')}</Text>
+                    </Card.Content>
+                </Card>
+            </SafeAreaView>
+
         );
     }
 
     if (!orders || orders.length === 0) {
         return (
-            <Card style={styles.emptyCard}>
-                <Card.Content style={styles.centered}>
-                    <Text style={styles.emptyText}>No orders found.</Text>
-                </Card.Content>
-            </Card>
+            <SafeAreaView style={styles.safeArea}>
+                <IndividualHeader headerName='Your Orders' />
+                <View style={styles.emptyCartContainer}>
+                    <Text style={styles.emptyText}>Your order is empty</Text>
+                </View>
+            </SafeAreaView>
         );
     }
 
@@ -414,14 +420,19 @@ const styles = StyleSheet.create({
     },
     emptyText: {
         textAlign: 'center',
-        fontSize: 16,
+        fontSize: 18,
         color: '#666',
-        marginTop: 12,
+        fontWeight: '600',
     },
     cartModal: {
         flexDirection: 'row',
         justifyContent: 'center',
         marginTop: 16,
         gap: 20,
-    }
+    },
+    emptyCartContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
 });

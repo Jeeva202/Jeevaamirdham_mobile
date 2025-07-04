@@ -1,4 +1,3 @@
-
 import { REACT_API_URL } from '@/app-config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ParamListBase, useNavigation, useRoute } from '@react-navigation/native';
@@ -24,6 +23,7 @@ export interface Book {
     id: number;
     title: string;
     subtitle: string;
+    author: string;
     shortdesc: string;
     orgPrice: string;
     discount: string;
@@ -220,6 +220,7 @@ const BookListScreen: React.FC = () => {
 
                     <Text style={styles.bookSubtitle} numberOfLines={1}>{item.subtitle}</Text>
 
+                    <Text style={styles.bookSubtitle} numberOfLines={1}>Author: ஜீவஅமிர்தம் கோ.திருமுகன், BE.</Text>
                     <View style={styles.priceContainer}>
                         <Text style={styles.bookPrice}>
                             ₹{item.offPrice}
@@ -368,6 +369,12 @@ const styles = StyleSheet.create({
         color: '#666',
         marginBottom: 8,
         fontWeight: '700',
+    },
+    authorName: {
+        fontSize: 14,
+        color: '#333',
+        marginBottom: 8,
+        fontStyle: 'italic',
     },
     priceContainer: {
         marginBottom: 12,

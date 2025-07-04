@@ -5,7 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import axios from 'axios';
 import React, { useState } from 'react';
-import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, ImageBackground, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, Card, Divider } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from 'react-query';
@@ -180,76 +180,82 @@ const YourOrder: React.FC = () => {
     }
 
     return (
-        <SafeAreaView style={styles.safeArea}>
-            <IndividualHeader headerName='Your Orders' />
-            <ScrollView contentContainerStyle={styles.container}>
-                {orders.map((order, index) => (
-                    <Card key={order.orderId || index} style={styles.orderCard}>
-                        {/* Compact Order Header */}
-                        <View style={styles.orderHeader}>
-                            <View style={styles.orderInfo}>
-                                <Text style={styles.orderStatus}>{order.status || 'Order Placed'}</Text>
-                                <Text style={styles.orderId}>#{order.orderId}</Text>
-                            </View>
-                            <View style={styles.orderMeta}>
-                                <Text style={styles.orderTotal}>₹{order.totalPrice}</Text>
-                                <Text style={styles.orderDate}>
-                                    {order.orderDate ? new Date(order.orderDate).toLocaleDateString('en-US', {
-                                        month: 'short',
-                                        day: 'numeric',
-                                        year: '2-digit'
-                                    }) : '-'}
-                                </Text>
-                            </View>
-                        </View>
-
-                        {/* Compact Shipping Info */}
-                        <View style={styles.shippingRow}>
-                            <Text style={styles.shippingText} numberOfLines={1}>
-                                Shipping to: {order.shipAt}
-                            </Text>
-                            <Text style={styles.deliveryText}>5-7 days</Text>
-                        </View>
-
-                        <Divider style={styles.divider} />
-
-                        {/* Compact Items List */}
-                        <View style={styles.itemsList}>
-                            {order.items && order.items.map((item: OrderItem, itemIndex: number) => (
-                                <View key={item.bookId || itemIndex} style={styles.itemRow}>
-                                    <Image
-                                        source={{ uri: item.bookImage || 'https://via.placeholder.com/40x55' }}
-                                        style={styles.bookImage}
-                                        resizeMode="cover"
-                                    />
-                                    <View style={styles.itemInfo}>
-                                        <Text style={styles.itemTitle} numberOfLines={2}>
-                                            {item.bookTitle}
-                                        </Text>
-                                        <View style={styles.itemDetails}>
-                                            <Text style={styles.quantityPrice}>
-                                                Qty: {item.quantity} • ₹{item.price * item.quantity}
-                                            </Text>
-                                        </View>
-                                    </View>
-                                    <Button
-                                        mode="contained"
-                                        onPress={() => handleAddToCart(item.bookId, 1)}
-                                        style={styles.buyButton}
-                                        labelStyle={styles.buttonLabel}
-                                        compact
-                                    >
-                                        Buy Again
-                                    </Button>
+        <ImageBackground
+            source={require('@/assets/images/appBackground.png')}
+            style={{ flex: 1 }}
+            resizeMode="cover"
+        >
+            <SafeAreaView style={styles.safeArea}>
+                <IndividualHeader headerName='Your Orders' />
+                <ScrollView contentContainerStyle={styles.container}>
+                    {orders.map((order, index) => (
+                        <Card key={order.orderId || index} style={styles.orderCard}>
+                            {/* Compact Order Header */}
+                            <View style={styles.orderHeader}>
+                                <View style={styles.orderInfo}>
+                                    <Text style={styles.orderStatus}>{order.status || 'Order Placed'}</Text>
+                                    <Text style={styles.orderId}>#{order.orderId}</Text>
                                 </View>
-                            ))}
-                        </View>
-                    </Card>
-                ))}
-            </ScrollView>
+                                <View style={styles.orderMeta}>
+                                    <Text style={styles.orderTotal}>₹{order.totalPrice}</Text>
+                                    <Text style={styles.orderDate}>
+                                        {order.orderDate ? new Date(order.orderDate).toLocaleDateString('en-US', {
+                                            month: 'short',
+                                            day: 'numeric',
+                                            year: '2-digit'
+                                        }) : '-'}
+                                    </Text>
+                                </View>
+                            </View>
 
-            <CartModal visible={isCartModalVisible} onClose={() => setIsCartModalVisible(false)} />
-        </SafeAreaView>
+                            {/* Compact Shipping Info */}
+                            <View style={styles.shippingRow}>
+                                <Text style={styles.shippingText} numberOfLines={1}>
+                                    Shipping to: {order.shipAt}
+                                </Text>
+                                <Text style={styles.deliveryText}>5-7 days</Text>
+                            </View>
+
+                            <Divider style={styles.divider} />
+
+                            {/* Compact Items List */}
+                            <View style={styles.itemsList}>
+                                {order.items && order.items.map((item: OrderItem, itemIndex: number) => (
+                                    <View key={item.bookId || itemIndex} style={styles.itemRow}>
+                                        <Image
+                                            source={{ uri: item.bookImage || 'https://via.placeholder.com/40x55' }}
+                                            style={styles.bookImage}
+                                            resizeMode="cover"
+                                        />
+                                        <View style={styles.itemInfo}>
+                                            <Text style={styles.itemTitle} numberOfLines={2}>
+                                                {item.bookTitle}
+                                            </Text>
+                                            <View style={styles.itemDetails}>
+                                                <Text style={styles.quantityPrice}>
+                                                    Qty: {item.quantity} • ₹{item.price * item.quantity}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                        <Button
+                                            mode="contained"
+                                            onPress={() => handleAddToCart(item.bookId, 1)}
+                                            style={styles.buyButton}
+                                            labelStyle={styles.buttonLabel}
+                                            compact
+                                        >
+                                            Buy Again
+                                        </Button>
+                                    </View>
+                                ))}
+                            </View>
+                        </Card>
+                    ))}
+                </ScrollView>
+
+                <CartModal visible={isCartModalVisible} onClose={() => setIsCartModalVisible(false)} />
+            </SafeAreaView>
+        </ImageBackground>
     );
 };
 
@@ -258,7 +264,7 @@ export default YourOrder;
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#f9e5ab',
+        // backgroundColor: '#f9e5ab',
     },
     container: {
         padding: 16,

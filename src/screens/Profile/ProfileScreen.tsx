@@ -6,7 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import { Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Dimensions, ImageBackground, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Badge, Button, Card, Snackbar, Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -215,83 +215,102 @@ const ProfileScreen = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <IndividualHeader headerName='Profile' />
-      {/* <SafeAreaView style={{ flex: 1 }}> */}
-      {error && (
-        <Snackbar
-          visible={!!error}
-          onDismiss={() => setError(null)}
-          duration={3000}
-          style={styles.snackbar}
-        >
-          {error}
-        </Snackbar>
-      )}
+    <ImageBackground
+      source={require('@/assets/images/appBackground.png')}
+      style={{ flex: 1 }}
+      resizeMode="cover"
+    >
+      <SafeAreaView style={styles.container}>
+        <IndividualHeader headerName='Profile' />
+        {/* <SafeAreaView style={{ flex: 1 }}> */}
+        {error && (
+          <Snackbar
+            visible={!!error}
+            onDismiss={() => setError(null)}
+            duration={3000}
+            style={styles.snackbar}
+          >
+            {error}
+          </Snackbar>
+        )}
 
-      <ScrollView
-        style={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* User Profile Header */}
-        <View style={styles.profileHeaderBox}>
-          <View style={styles.profileHeaderRow}>
-            <View style={styles.profileAvatarBox}>
-              <Text style={styles.profileAvatarText}>
-                {userName ? userName.slice(0, 1).toUpperCase() : 'J'}
-              </Text>
-            </View>
-            <View style={styles.profileHeaderInfo}>
-              <View style={styles.profileHeaderNameRow}>
-                <Text style={styles.profileHeaderName}>{userName || 'Enter User'}</Text>
-                {missingFields && <View style={styles.profileHeaderDot}></View>}
-                {/* {missingFields && <Text style={styles.profileHeaderEmail}>Incomplete</Text>} */}
+        <ScrollView
+          style={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          {/* User Profile Header */}
+          <View style={styles.profileHeaderBox}>
+            <View style={styles.profileHeaderRow}>
+              <View style={styles.profileAvatarBox}>
+                <Text style={styles.profileAvatarText}>
+                  {userName ? userName.slice(0, 1).toUpperCase() : 'J'}
+                </Text>
               </View>
-              <Text style={styles.profileHeaderEmail} numberOfLines={1}>{userEmail || 'Enter email'}</Text>
+              <View style={styles.profileHeaderInfo}>
+                <View style={styles.profileHeaderNameRow}>
+                  <Text style={styles.profileHeaderName}>{userName || 'Enter User'}</Text>
+                  {missingFields && <View style={styles.profileHeaderDot}></View>}
+                  {/* {missingFields && <Text style={styles.profileHeaderEmail}>Incomplete</Text>} */}
+                </View>
+                <Text style={styles.profileHeaderEmail} numberOfLines={1}>{userEmail || 'Enter email'}</Text>
+              </View>
+              <TouchableOpacity onPress={() => navigation.navigate('AccountDetails', {
+                userId,
+                userData: formData,
+                userEmail,
+                userName,
+                setFormData,
+                userDataLoading,
+                missingFields,
+                setMissing: setMissingFields,
+              })}>
+                <Text style={styles.editButton}>Edit</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={() => navigation.navigate('AccountDetails', {
-              userId,
-              userData: formData,
-              userEmail,
-              userName,
-              setFormData,
-              userDataLoading,
-              missingFields,
-              setMissing: setMissingFields,
-            })}>
-              <Text style={styles.editButton}>Edit</Text>
-            </TouchableOpacity>
           </View>
-        </View>
 
-        {/* Profile Options */}
-        <View style={styles.optionsContainer}>
-          <Text style={styles.sectionTitle}>Profile Options</Text>
-          {profileOptions.map(renderProfileOption)}
-        </View>
+          {/* Profile Options */}
+          <View style={styles.optionsContainer}>
+            <Text style={styles.sectionTitle}>Profile Options</Text>
+            {profileOptions.map(renderProfileOption)}
+          </View>
 
-        {/* Logout Button */}
-        <Button
-          mode="contained"
-          onPress={handleLogout}
-          style={styles.logoutButton}
-          labelStyle={styles.logoutButtonText}
-          icon="logout"
-        >
-          Logout
-        </Button>
-      </ScrollView>
-    </SafeAreaView>
+          {/* Contact Us Link */}
+          <TouchableOpacity
+            style={{ alignItems: 'center', marginBottom: 16 }}
+            onPress={() => {
+              // Open contact page in browser
+              import('react-native').then(({ Linking }) => {
+                Linking.openURL('https://www.jeevaamirdham.org/contact');
+              });
+            }}
+          >
+            <Text style={{ color: '#007AFF', fontWeight: '600', fontSize: 16, textDecorationLine: 'underline' }}>
+              Contact Us
+            </Text>
+          </TouchableOpacity>
 
-
+          {/* Logout Button */}
+          <Button
+            mode="contained"
+            onPress={handleLogout}
+            style={styles.logoutButton}
+            labelStyle={styles.logoutButtonText}
+            icon="logout"
+          >
+            Logout
+          </Button>
+        </ScrollView>
+      </SafeAreaView>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9e5ab',
+    // backgroundColor: '#f9e5ab',
   },
   scrollContainer: {
     flex: 1,

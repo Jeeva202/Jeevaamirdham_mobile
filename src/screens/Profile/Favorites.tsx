@@ -11,6 +11,7 @@ import {
     Dimensions,
     FlatList,
     Image,
+    ImageBackground,
     RefreshControl,
     StyleSheet,
     Text,
@@ -237,44 +238,49 @@ export default function FavoritesScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <IndividualHeader headerName='Favorites' />
+    <ImageBackground
+      source={require('@/assets/images/appBackground.png')}
+      style={{ flex: 1 }}
+      resizeMode="cover"
+    >
+      <SafeAreaView style={styles.safeArea}>
+        <IndividualHeader headerName='Favorites' />
 
 
-      {favorites.length == 0 ? (
-        <EmptyState />
-      ) : (
-        <FlatList
-          contentContainerStyle={styles.list}
-          data={favorites}
-          keyExtractor={(item) => item.id}
-          numColumns={2}
-          renderItem={({ item }) => <BookCard item={item} />}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={['#f09300']}
-              tintColor="#f09300"
-            />
-          }
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={() => (
-            <View style={styles.noResultsContainer}>
-              <MaterialIcons name="search-off" size={50} color="#ccc" />
-              <Text style={styles.noResultsText}>No books match your search</Text>
-            </View>
-          )}
-        />
-      )}
-    </SafeAreaView>
+        {favorites.length == 0 ? (
+          <EmptyState />
+        ) : (
+          <FlatList
+            contentContainerStyle={styles.list}
+            data={favorites}
+            keyExtractor={(item) => item.id}
+            numColumns={2}
+            renderItem={({ item }) => <BookCard item={item} />}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={['#f09300']}
+                tintColor="#f09300"
+              />
+            }
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={() => (
+              <View style={styles.noResultsContainer}>
+                <MaterialIcons name="search-off" size={50} color="#ccc" />
+                <Text style={styles.noResultsText}>No books match your search</Text>
+              </View>
+            )}
+          />
+        )}
+      </SafeAreaView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f9e5ab',
   },
   centered: {
     flex: 1,

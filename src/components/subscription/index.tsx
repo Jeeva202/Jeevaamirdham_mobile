@@ -579,9 +579,9 @@ export default function SubscriptionScreen(): React.ReactElement {
   }) => {
     const options = {
       description: 'Subscription Payment',
-      image: 'https://i.imgur.com/3g7nmJc.png',
+      image: '/appLogo.png', // Use your actual app logo URL here
       currency: 'INR',
-      key: 'rzp_live_tjwWB1t6xxjHG1', // Updated to match CheckoutScreen
+      key: 'rzp_live_OwYWxXYV5JFbXK', // Updated to match CheckoutScreen
       amount: Number(amount) * 100, // Amount in paise
       order_id: orderId,
       name: 'Jeevaamirdham',

@@ -5,7 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
-import { Animated, StyleSheet, View } from 'react-native';
+import { Animated, ImageBackground, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Button, Card, List, Surface, Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -208,87 +208,93 @@ const DashboardScreen = ({ route }: DashboardScreenProps) => {
     );
 
     return (
-        <SafeAreaView style={styles.container}>
-            <IndividualHeader headerName='Dashboard' />
+        <ImageBackground
+            source={require('@/assets/images/appBackground.png')}
+            style={{ flex: 1 }}
+            resizeMode="cover"
+        >
+            <SafeAreaView style={styles.container}>
+                <IndividualHeader headerName='Dashboard' />
 
-            {/* Expired Subscription Banner - NEW */}
-            {isExpired && planData && (
-                <ExpiryBanner />
-            )}
+                {/* Expired Subscription Banner - NEW */}
+                {isExpired && planData && (
+                    <ExpiryBanner />
+                )}
 
-            {missingFields && (
-                <Surface style={styles.alertSurface}>
-                    <Text style={styles.alertText}>
-                        <Icon name="info" size={20} color="#0C5460" /> Please update your account details
-                    </Text>
-                </Surface>
-            )}
+                {missingFields && (
+                    <Surface style={styles.alertSurface}>
+                        <Text style={styles.alertText}>
+                            <Icon name="info" size={20} color="#0C5460" /> Please update your account details
+                        </Text>
+                    </Surface>
+                )}
 
-            <Card style={styles.mainCard} mode="elevated">
-                <Card.Content>
-                    <Text style={styles.sectionTitle}>Current Subscription</Text>
-                    {planData && expiryData ? (
-                        <>
-                            {isExpired ? (
-                                <Surface style={styles.expiredSurface}>
-                                    <View style={styles.alertTitleContainer}>
-                                        <Icon name="warning" size={22} color="#721c24" />
-                                        <Text style={styles.alertTitle}>Your {planData.name.toUpperCase()} Plan has Expired</Text>
-                                    </View>
-                                    <Text style={styles.alertText}>
-                                        Your Magazine Subscription period:{'\n'}
-                                        <Text style={styles.dateText}>From: {formatDate(expiryData.created_dt)}</Text>{'\n'}
-                                        <Text style={styles.dateText}>To: {formatDate(expiryData.expiry_dt)}</Text>
-                                    </Text>
-                                    <Button
-                                        mode="contained"
-                                        onPress={() => { navigation.navigate('SubscriptionScreen') }}
-                                        style={styles.renewButton}
-                                        icon="autorenew"
-                                    >
-                                        Renew / Upgrade now
-                                    </Button>
-                                </Surface>
-                            ) : (
-                                <Surface style={styles.planSurface} elevation={0}>
-                                    <Text style={styles.planTitle}>
-                                        <Icon name="stars" size={24} color="#F09300" /> {planData.name.toUpperCase()} Plan
-                                    </Text>
-                                    <List.Section style={styles.featuresList}>
-                                        {planData.features.map((feature, index) => (
-                                            <List.Item
-                                                key={index}
-                                                title={feature}
-                                                left={() => <Icon name="check-circle" size={24} color="#4CAF50" />}
-                                                titleStyle={styles.listItem}
-                                                style={styles.featureItem}
-                                            />
-                                        ))}
-                                    </List.Section>
-                                    <Surface style={styles.validitySurface} elevation={0}>
-                                        <Text style={styles.validityText}>
-                                            Subscription Period:{'\n'}
+                <Card style={styles.mainCard} mode="elevated">
+                    <Card.Content>
+                        <Text style={styles.sectionTitle}>Current Subscription</Text>
+                        {planData && expiryData ? (
+                            <>
+                                {isExpired ? (
+                                    <Surface style={styles.expiredSurface}>
+                                        <View style={styles.alertTitleContainer}>
+                                            <Icon name="warning" size={22} color="#721c24" />
+                                            <Text style={styles.alertTitle}>Your {planData.name.toUpperCase()} Plan has Expired</Text>
+                                        </View>
+                                        <Text style={styles.alertText}>
+                                            Your Magazine Subscription period:{'\n'}
                                             <Text style={styles.dateText}>From: {formatDate(expiryData.created_dt)}</Text>{'\n'}
                                             <Text style={styles.dateText}>To: {formatDate(expiryData.expiry_dt)}</Text>
                                         </Text>
                                         <Button
                                             mode="contained"
                                             onPress={() => { navigation.navigate('SubscriptionScreen') }}
-                                            style={styles.upgradeButton}
-                                            icon="trending-up"
+                                            style={styles.renewButton}
+                                            icon="autorenew"
                                         >
-                                            Upgrade Plan
+                                            Renew / Upgrade now
                                         </Button>
                                     </Surface>
-                                </Surface>
-                            )}
-                        </>
-                    ) : (
-                        <Text style={styles.errorText}>Unable to load subscription details</Text>
-                    )}
-                </Card.Content>
-            </Card>
-        </SafeAreaView>
+                                ) : (
+                                    <Surface style={styles.planSurface} elevation={0}>
+                                        <Text style={styles.planTitle}>
+                                            <Icon name="stars" size={24} color="#F09300" /> {planData.name.toUpperCase()} Plan
+                                        </Text>
+                                        <List.Section style={styles.featuresList}>
+                                            {planData.features.map((feature, index) => (
+                                                <List.Item
+                                                    key={index}
+                                                    title={feature}
+                                                    left={() => <Icon name="check-circle" size={24} color="#4CAF50" />}
+                                                    titleStyle={styles.listItem}
+                                                    style={styles.featureItem}
+                                                />
+                                            ))}
+                                        </List.Section>
+                                        <Surface style={styles.validitySurface} elevation={0}>
+                                            <Text style={styles.validityText}>
+                                                Subscription Period:{'\n'}
+                                                <Text style={styles.dateText}>From: {formatDate(expiryData.created_dt)}</Text>{'\n'}
+                                                <Text style={styles.dateText}>To: {formatDate(expiryData.expiry_dt)}</Text>
+                                            </Text>
+                                            <Button
+                                                mode="contained"
+                                                onPress={() => { navigation.navigate('SubscriptionScreen') }}
+                                                style={styles.upgradeButton}
+                                                icon="trending-up"
+                                            >
+                                                Upgrade Plan
+                                            </Button>
+                                        </Surface>
+                                    </Surface>
+                                )}
+                            </>
+                        ) : (
+                            <Text style={styles.errorText}>Unable to load subscription details</Text>
+                        )}
+                    </Card.Content>
+                </Card>
+            </SafeAreaView>
+        </ImageBackground>
     );
 };
 
@@ -296,7 +302,6 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         paddingHorizontal: 16,
-        backgroundColor: '#f9e5ab',
     },
     loaderContainer: {
         flex: 1,

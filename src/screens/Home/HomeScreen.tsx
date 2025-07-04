@@ -1,6 +1,7 @@
 import { REACT_API_URL } from '@/app-config';
 import PopularBooks from '@/src/components/popularBooks/PopularBooks';
 import TodayThoughts from '@/src/components/todaysThought/TodaysThought';
+import { useAndroidUpdateCheck } from '@/src/utils/useAndroidUpdateCheck';
 import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
 import { useNavigation } from '@react-navigation/native';
@@ -10,6 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
 import { Animated, FlatList, ImageBackground, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useQuery } from 'react-query';
 
@@ -193,6 +195,8 @@ const HomeScreen = () => {
     }).start();
   }, [userId]); // Dependency on userId to re-fetch if it changes (e.g., after login/logout)
 
+  useAndroidUpdateCheck();
+
   const formatDate = (dateString: string | undefined | null): string => {
     if (!dateString) return 'N/A';
     return dayjs(dateString).format('MMMM D, YYYY'); // Added YYYY for complete date
@@ -232,89 +236,97 @@ const HomeScreen = () => {
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+    <ImageBackground
+      source={require('@/assets/images/appBackground.png')}
+      style={{ flex: 1 }}
+      resizeMode="cover"
     >
-      {/* --- Expired Subscription Banner --- */}
-      <ExpiredBanner />
+      <SafeAreaView style={styles.container}>
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={styles.contentContainer}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        >
+          {/* --- Expired Subscription Banner --- */}
+          <ExpiredBanner />
 
-      {/* Today's Thoughts Section */}
-      <TodayThoughts />
+          {/* Today's Thoughts Section */}
+          <TodayThoughts />
 
-      {/* Banner Section (Image) */}
-      <ImageBackground
-        source={require('../../../assets/images/Banner_mobile.png')}
-        style={styles.banner}
-        imageStyle={styles.bannerImage}
-        resizeMode="cover"
-      >
-        {/* You can uncomment and use LinearGradient if you want an overlay on the image */}
-        {/* <LinearGradient
+          {/* Banner Section (Image) */}
+          <ImageBackground
+            source={require('../../../assets/images/Banner_mobile.png')}
+            style={styles.banner}
+            imageStyle={styles.bannerImage}
+            resizeMode="cover"
+          >
+            {/* You can uncomment and use LinearGradient if you want an overlay on the image */}
+            {/* <LinearGradient
           colors={["rgba(0,0,0,0.1)", "rgba(0,0,0,0.3)"]}
           style={styles.bannerOverlay}
         >
         </LinearGradient> */}
-      </ImageBackground>
+          </ImageBackground>
 
-      {/* E-magazine Edition Section */}
-      <View style={{ marginBottom: 20 }}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>E-magazine Edition</Text>
-          <TouchableOpacity style={styles.viewAllButton} onPress={() => navigation.navigate('E-Magazine')}>
-            <Text style={styles.viewAllText}>View All</Text>
-            <MaterialIcons name="keyboard-arrow-right" size={16} color="#FFF" />
-          </TouchableOpacity>
-        </View>
-
-        <View>
-          <FlatList
-            data={years?.slice(0, 3) || []} // Ensure years is not null/undefined here
-            keyExtractor={(item) => item.year.toString()}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                onPress={() => navigation.navigate('MonthSelection', { year: item.year })}
-                style={styles.card}
-              >
-                <ImageBackground source={{ uri: item.imgUrl }} style={styles.image}>
-                  <LinearGradient
-                    colors={['transparent', 'rgba(0,0,0,0.8)']}
-                    style={styles.gradient}
-                  >
-                    <View style={styles.cardContent}>
-                      <View style={styles.yearBadge}>
-                        <Text style={styles.yearText}>{item.year}</Text>
-                      </View>
-                      <Text style={styles.cardSubtitle}>Magazine Collection</Text>
-                    </View>
-                  </LinearGradient>
-                </ImageBackground>
+          {/* E-magazine Edition Section */}
+          <View style={{ marginBottom: 20 }}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>E-magazine Edition</Text>
+              <TouchableOpacity style={styles.viewAllButton} onPress={() => navigation.navigate('E-Magazine')}>
+                <Text style={styles.viewAllText}>View All</Text>
+                <MaterialIcons name="keyboard-arrow-right" size={16} color="#FFF" />
               </TouchableOpacity>
-            )}
-          />
-        </View>
-      </View>
+            </View>
 
-      {/* Popular Books Section */}
-      <PopularBooks
-        books={popularBooks.map((book) => ({
-          ...book,
-          subtitle: book.subtitle ?? '',
-          offPrice: book.offPrice !== undefined && book.offPrice !== null ? String(book.offPrice) : '',
-          imgUrl: book.imgUrl ?? '',
-        }))}
-      />
-    </ScrollView>
+            <View>
+              <FlatList
+                data={years?.slice(0, 3) || []} // Ensure years is not null/undefined here
+                keyExtractor={(item) => item.year.toString()}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate('MonthSelection', { year: item.year })}
+                    style={styles.card}
+                  >
+                    <ImageBackground source={{ uri: item.imgUrl }} style={styles.image}>
+                      <LinearGradient
+                        colors={['transparent', 'rgba(0,0,0,0.8)']}
+                        style={styles.gradient}
+                      >
+                        <View style={styles.cardContent}>
+                          <View style={styles.yearBadge}>
+                            <Text style={styles.yearText}>{item.year}</Text>
+                          </View>
+                          <Text style={styles.cardSubtitle}>Magazine Collection</Text>
+                        </View>
+                      </LinearGradient>
+                    </ImageBackground>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+          </View>
+
+          {/* Popular Books Section */}
+          <PopularBooks
+            books={popularBooks.map((book) => ({
+              ...book,
+              subtitle: book.subtitle ?? '',
+              offPrice: book.offPrice !== undefined && book.offPrice !== null ? String(book.offPrice) : '',
+              imgUrl: book.imgUrl ?? '',
+            }))}
+          />
+        </ScrollView>
+      </SafeAreaView>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9e5ab',
+    // backgroundColor: '#f9e5ab',
   },
   contentContainer: {
     padding: 16,

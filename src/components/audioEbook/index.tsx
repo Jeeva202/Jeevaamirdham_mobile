@@ -387,13 +387,13 @@ const AudioPlayerComponent = memo(({ audioData, plan, isExpired, onUpgrade }: Pr
                   activeOpacity={0.8}
                   style={styles.transcriptTouchable}
                 >
-                  <Text
+                  {/* <Text
                     style={[styles.trackTranscript, isLocked && styles.lockedText]}
                     numberOfLines={3}
                     ellipsizeMode="tail"
                   >
                     {audio.transcript?.replace(/\n+/g, ' ') || 'No transcript available'}
-                  </Text>
+                  </Text> */}
                   {audio.transcript && audio.transcript.length > 100 && (
                     <Text style={styles.readMoreText}>Tap to read more...</Text>
                   )}

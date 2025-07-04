@@ -6,7 +6,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import axios from 'axios';
 import { City, State } from 'country-state-city';
 import React, { useEffect, useState } from 'react';
-import { Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { ImageBackground, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Button, Card, Snackbar, Text, TextInput } from 'react-native-paper';
 import RazorpayCheckout from 'react-native-razorpay';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -236,11 +236,11 @@ const CheckoutScreen: React.FC = () => {
 
       // Razorpay options
       const options = {
-        key: 'rzp_live_tjwWB1t6xxjHG1',
+        key: 'rzp_live_OwYWxXYV5JFbXK',
         amount: Math.round(parseFloat(totalAmount) * 100),
         currency: 'INR',
         name: 'Jeevaamirdham',
-        image: 'https://i.imgur.com/3g7nmJc.png',
+        image: '/appLogo.png', 
         description: 'Order Payment',
         order_id: orderId,
         prefill: {
@@ -336,173 +336,179 @@ const CheckoutScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <IndividualHeader headerName={'Checkout'} />
-      <ScrollView style={{ overflow: 'scroll', height: 1, zIndex: 10 }}>
-        {error && (
-          <Snackbar
-            visible={!!error}
-            onDismiss={() => setError(null)}
-            duration={3000}
-            style={styles.errorSnackbar}
-          >
-            {error}
-          </Snackbar>
-        )}
-
-        <Card style={styles.billingCard}>
-          <Card.Content>
-            <Text style={styles.sectionTitle}>Billing Details</Text>
-            <TextInput
-              label="First Name *"
-              value={userDetails.firstname}
-              onChangeText={(text) => handleInputChange('firstname', text)}
-              style={styles.input}
-              mode="outlined"
-            />
-            <TextInput
-              label="Last Name *"
-              value={userDetails.lastname}
-              onChangeText={(text) => handleInputChange('lastname', text)}
-              style={styles.input}
-              mode="outlined"
-            />
-            <TextInput
-              label="Company Name (optional)"
-              value={userDetails.company}
-              onChangeText={(text) => handleInputChange('company', text)}
-              style={styles.input}
-              mode="outlined"
-            />
-            <TextInput
-              label="Country"
-              value="India"
-              disabled
-              style={styles.input}
-              mode="outlined"
-            />
-            <View style={styles.pickerContainer}>
-              <Text style={styles.pickerLabel}>State *</Text>
-              <Picker
-                selectedValue={userDetails.state}
-                onValueChange={(value) => handleInputChange('state', value)}
-                style={styles.picker}
-              >
-                <Picker.Item label="Select State" value="" />
-                {states.map((state) => (
-                  <Picker.Item key={state.isoCode} label={state.name} value={state.isoCode} />
-                ))}
-              </Picker>
-            </View>
-            <TextInput
-              label="Street Address *"
-              value={userDetails.street}
-              onChangeText={(text) => handleInputChange('street', text)}
-              style={styles.input}
-              mode="outlined"
-              placeholder="House number and street name"
-            />
-            <TextInput
-              label="Apartment, suite, etc. (optional)"
-              value={userDetails.street2}
-              onChangeText={(text) => handleInputChange('street2', text)}
-              style={styles.input}
-              mode="outlined"
-            />
-            <View style={styles.pickerContainer}>
-              <Text style={styles.pickerLabel}>Town/City *</Text>
-              <Picker
-                selectedValue={userDetails.city}
-                onValueChange={(value) => handleInputChange('city', value)}
-                style={styles.picker}
-                enabled={!!userDetails.state}
-              >
-                <Picker.Item label="Select City" value="" />
-                {cities.map((city) => (
-                  <Picker.Item key={city.name} label={city.name} value={city.name} />
-                ))}
-              </Picker>
-            </View>
-            <TextInput
-              label="Zipcode/Pincode *"
-              value={userDetails.zipcode}
-              onChangeText={(text) => handleInputChange('zipcode', text)}
-              style={styles.input}
-              mode="outlined"
-              keyboardType="numeric"
-            />
-            <TextInput
-              label="Phone *"
-              value={userDetails.phone}
-              onChangeText={(text) => handleInputChange('phone', text)}
-              style={styles.input}
-              mode="outlined"
-              keyboardType="phone-pad"
-            />
-            <TextInput
-              label="Email *"
-              value={userDetails.email}
-              onChangeText={(text) => handleInputChange('email', text)}
-              style={styles.input}
-              mode="outlined"
-              keyboardType="email-address"
-            />
-            <Text style={styles.subSectionTitle}>Additional Information</Text>
-            <TextInput
-              label="Order Notes (optional)"
-              value={userDetails.notes}
-              onChangeText={(text) => handleInputChange('notes', text)}
-              style={styles.input}
-              mode="outlined"
-              multiline
-              numberOfLines={4}
-              placeholder="Notes about your order, e.g. special delivery instructions"
-            />
-          </Card.Content>
-        </Card>
-
-        <Card style={styles.orderCard}>
-          <Card.Content>
-            <Text style={styles.sectionTitle}>Your Order</Text>
-            <View style={styles.orderHeader}>
-              <Text style={styles.orderHeaderText}>Product</Text>
-              <Text style={styles.orderHeaderText}>Price</Text>
-            </View>
-            {cartItems.map((item, index) => (
-              <View key={index} style={styles.orderItem}>
-                <Text style={styles.orderItemText}>
-                  {item.name} × {item.quantity}
-                </Text>
-                <Text style={styles.orderItemPrice}>₹{item.subtotal.toFixed(2)}</Text>
-                <Text style={styles.orderItemEach}>Each ₹{item.price.toFixed(2)}</Text>
-              </View>
-            ))}
-            <View style={styles.orderTotal}>
-              <Text style={styles.orderTotalText}>Subtotal</Text>
-              <Text style={styles.orderTotalAmount}>₹{totalAmount}</Text>
-            </View>
-            <View style={styles.orderTotal}>
-              <Text style={styles.orderTotalText}>Total</Text>
-              <Text style={styles.orderTotalAmount}>₹{totalAmount}</Text>
-            </View>
-            <Text style={styles.privacyText}>
-              Your personal data will be used to process your order, support your experience throughout this app, and for other purposes described in our privacy policy.
-            </Text>
-            <Text style={styles.shippingNote}>
-              * Note: Shipping charges may vary. Our admin team will contact you to confirm your order and provide details about the shipping costs.
-            </Text>
-            <Button
-              mode="contained"
-              onPress={handleSubmit}
-              style={styles.placeOrderButton}
-              labelStyle={styles.placeOrderButtonText}
+    <ImageBackground
+      source={require('@/assets/images/appBackground.png')}
+      style={{ flex: 1 }}
+      resizeMode="cover"
+    >
+      <SafeAreaView style={styles.container}>
+        <IndividualHeader headerName={'Checkout'} />
+        <ScrollView style={{ overflow: 'scroll', height: 1, zIndex: 10 }}>
+          {error && (
+            <Snackbar
+              visible={!!error}
+              onDismiss={() => setError(null)}
+              duration={3000}
+              style={styles.errorSnackbar}
             >
-              Place Order
-            </Button>
-          </Card.Content>
-        </Card>
-      </ScrollView>
-    </SafeAreaView>
+              {error}
+            </Snackbar>
+          )}
+
+          <Card style={styles.billingCard}>
+            <Card.Content>
+              <Text style={styles.sectionTitle}>Billing Details</Text>
+              <TextInput
+                label="First Name *"
+                value={userDetails.firstname}
+                onChangeText={(text) => handleInputChange('firstname', text)}
+                style={styles.input}
+                mode="outlined"
+              />
+              <TextInput
+                label="Last Name *"
+                value={userDetails.lastname}
+                onChangeText={(text) => handleInputChange('lastname', text)}
+                style={styles.input}
+                mode="outlined"
+              />
+              <TextInput
+                label="Company Name (optional)"
+                value={userDetails.company}
+                onChangeText={(text) => handleInputChange('company', text)}
+                style={styles.input}
+                mode="outlined"
+              />
+              <TextInput
+                label="Country"
+                value="India"
+                disabled
+                style={styles.input}
+                mode="outlined"
+              />
+              <View style={styles.pickerContainer}>
+                <Text style={styles.pickerLabel}>State *</Text>
+                <Picker
+                  selectedValue={userDetails.state}
+                  onValueChange={(value) => handleInputChange('state', value)}
+                  style={styles.picker}
+                >
+                  <Picker.Item label="Select State" value="" />
+                  {states.map((state) => (
+                    <Picker.Item key={state.isoCode} label={state.name} value={state.isoCode} />
+                  ))}
+                </Picker>
+              </View>
+              <TextInput
+                label="Street Address *"
+                value={userDetails.street}
+                onChangeText={(text) => handleInputChange('street', text)}
+                style={styles.input}
+                mode="outlined"
+                placeholder="House number and street name"
+              />
+              <TextInput
+                label="Apartment, suite, etc. (optional)"
+                value={userDetails.street2}
+                onChangeText={(text) => handleInputChange('street2', text)}
+                style={styles.input}
+                mode="outlined"
+              />
+              <View style={styles.pickerContainer}>
+                <Text style={styles.pickerLabel}>Town/City *</Text>
+                <Picker
+                  selectedValue={userDetails.city}
+                  onValueChange={(value) => handleInputChange('city', value)}
+                  style={styles.picker}
+                  enabled={!!userDetails.state}
+                >
+                  <Picker.Item label="Select City" value="" />
+                  {cities.map((city) => (
+                    <Picker.Item key={city.name} label={city.name} value={city.name} />
+                  ))}
+                </Picker>
+              </View>
+              <TextInput
+                label="Zipcode/Pincode *"
+                value={userDetails.zipcode}
+                onChangeText={(text) => handleInputChange('zipcode', text)}
+                style={styles.input}
+                mode="outlined"
+                keyboardType="numeric"
+              />
+              <TextInput
+                label="Phone *"
+                value={userDetails.phone}
+                onChangeText={(text) => handleInputChange('phone', text)}
+                style={styles.input}
+                mode="outlined"
+                keyboardType="phone-pad"
+              />
+              <TextInput
+                label="Email *"
+                value={userDetails.email}
+                onChangeText={(text) => handleInputChange('email', text)}
+                style={styles.input}
+                mode="outlined"
+                keyboardType="email-address"
+              />
+              <Text style={styles.subSectionTitle}>Additional Information</Text>
+              <TextInput
+                label="Order Notes (optional)"
+                value={userDetails.notes}
+                onChangeText={(text) => handleInputChange('notes', text)}
+                style={styles.input}
+                mode="outlined"
+                multiline
+                numberOfLines={4}
+                placeholder="Notes about your order, e.g. special delivery instructions"
+              />
+            </Card.Content>
+          </Card>
+
+          <Card style={styles.orderCard}>
+            <Card.Content>
+              <Text style={styles.sectionTitle}>Your Order</Text>
+              <View style={styles.orderHeader}>
+                <Text style={styles.orderHeaderText}>Product</Text>
+                <Text style={styles.orderHeaderText}>Price</Text>
+              </View>
+              {cartItems.map((item, index) => (
+                <View key={index} style={styles.orderItem}>
+                  <Text style={styles.orderItemText}>
+                    {item.name} × {item.quantity}
+                  </Text>
+                  <Text style={styles.orderItemPrice}>₹{item.subtotal.toFixed(2)}</Text>
+                  <Text style={styles.orderItemEach}>Each ₹{item.price.toFixed(2)}</Text>
+                </View>
+              ))}
+              <View style={styles.orderTotal}>
+                <Text style={styles.orderTotalText}>Subtotal</Text>
+                <Text style={styles.orderTotalAmount}>₹{totalAmount}</Text>
+              </View>
+              <View style={styles.orderTotal}>
+                <Text style={styles.orderTotalText}>Total</Text>
+                <Text style={styles.orderTotalAmount}>₹{totalAmount}</Text>
+              </View>
+              <Text style={styles.privacyText}>
+                Your personal data will be used to process your order, support your experience throughout this app, and for other purposes described in our privacy policy.
+              </Text>
+              <Text style={styles.shippingNote}>
+                * Note: Shipping charges may vary. Our admin team will contact you to confirm your order and provide details about the shipping costs.
+              </Text>
+              <Button
+                mode="contained"
+                onPress={handleSubmit}
+                style={styles.placeOrderButton}
+                labelStyle={styles.placeOrderButtonText}
+              >
+                Place Order
+              </Button>
+            </Card.Content>
+          </Card>
+        </ScrollView>
+      </SafeAreaView>
+    </ImageBackground>
   );
 };
 
@@ -511,7 +517,7 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingHorizontal: 16,
         marginVertical: 8,
-        backgroundColor: '#f9e5ab',
+        // backgroundColor: '#f9e5ab', // Removed background color for image background
     },
     title: {
         fontSize: 24,

@@ -8,7 +8,6 @@ import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from '
 import {
   Dimensions,
   Image,
-  // ScrollView,
   StyleSheet,
   TouchableOpacity,
   View
@@ -21,6 +20,8 @@ import Animated, {
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
+  withRepeat,
+  withSequence,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
@@ -52,7 +53,6 @@ interface AVPlaybackStatusError {
 type AVPlaybackStatus = AVPlaybackStatusSuccess | AVPlaybackStatusError;
 type NavigationProps = StackNavigationProp<RootStackParamList>;
 
-
 const formatTime = (millis?: number) => {
   if (!millis) return '0:00';
   const seconds = Math.floor(millis / 1000);
@@ -81,11 +81,29 @@ const AudioPlayerComponent = memo(({ audioData, plan, isExpired, onUpgrade }: Pr
   const cardScale = useSharedValue(1);
   const navigation = useNavigation<NavigationProps>();
 
+  // Add shared values for wave animations
+  const wave1Scale = useSharedValue(1);
+  const wave2Scale = useSharedValue(1);
+  const wave3Scale = useSharedValue(1);
+  const wave1Opacity = useSharedValue(0.3);
+  const wave2Opacity = useSharedValue(0.2);
+  const wave3Opacity = useSharedValue(0.1);
+
   useEffect(() => {
     if (isPlaying) {
-      waveAnimation.value = withTiming(1, { duration: 1000 });
+      wave1Scale.value = withRepeat(withSequence(withTiming(1.1, { duration: 700 }), withTiming(1, { duration: 700 })), -1, true);
+      wave2Scale.value = withRepeat(withSequence(withTiming(1.15, { duration: 900 }), withTiming(1, { duration: 900 })), -1, true);
+      wave3Scale.value = withRepeat(withSequence(withTiming(1.2, { duration: 1100 }), withTiming(1, { duration: 1100 })), -1, true);
+      wave1Opacity.value = withRepeat(withSequence(withTiming(0.5, { duration: 700 }), withTiming(0.3, { duration: 700 })), -1, true);
+      wave2Opacity.value = withRepeat(withSequence(withTiming(0.4, { duration: 900 }), withTiming(0.2, { duration: 900 })), -1, true);
+      wave3Opacity.value = withRepeat(withSequence(withTiming(0.2, { duration: 1100 }), withTiming(0.1, { duration: 1100 })), -1, true);
     } else {
-      waveAnimation.value = withTiming(0, { duration: 500 });
+      wave1Scale.value = withTiming(1, { duration: 400 });
+      wave2Scale.value = withTiming(1, { duration: 400 });
+      wave3Scale.value = withTiming(1, { duration: 400 });
+      wave1Opacity.value = withTiming(0.3, { duration: 400 });
+      wave2Opacity.value = withTiming(0.2, { duration: 400 });
+      wave3Opacity.value = withTiming(0.1, { duration: 400 });
     }
   }, [isPlaying]);
 
@@ -100,7 +118,6 @@ const AudioPlayerComponent = memo(({ audioData, plan, isExpired, onUpgrade }: Pr
 
     if ((isExpired || plan === 'basic') && index !== 0) {
       navigation.navigate('SubscriptionScreen');
-      // setUpgradeDialogVisible(true);
       return;
     }
 
@@ -186,7 +203,7 @@ const AudioPlayerComponent = memo(({ audioData, plan, isExpired, onUpgrade }: Pr
       if (isPlaying) {
         await soundRef.current.pauseAsync();
       } else {
-        if ( (isExpired || plan === 'basic') && currentAudioIndex !== 0) {
+        if ((isExpired || plan === 'basic') && currentAudioIndex !== 0) {
           setModalVisible(true);
           return;
         }
@@ -253,14 +270,28 @@ const AudioPlayerComponent = memo(({ audioData, plan, isExpired, onUpgrade }: Pr
     }
   }, []);
 
+  // Move these hooks above renderAudioCard so they're in scope
+  const animatedWave1 = useAnimatedStyle(() => ({
+    transform: [{ scale: wave1Scale.value }],
+    opacity: wave1Opacity.value,
+  }));
+  const animatedWave2 = useAnimatedStyle(() => ({
+    transform: [{ scale: wave2Scale.value }],
+    opacity: wave2Opacity.value,
+  }));
+  const animatedWave3 = useAnimatedStyle(() => ({
+    transform: [{ scale: wave3Scale.value }],
+    opacity: wave3Opacity.value,
+  }));
+
   const renderAudioCard = useCallback(
     (audio: AudioData, index: number) => {
-      const isLocked = (isExpired || plan == 'basic') && index !== 0 
+      const isLocked = (isExpired || plan === 'basic') && index !== 0;
       const isCurrentlySelected = currentAudioIndex === index;
       const itemIsProcessing = isProcessingAudio && isCurrentlySelected;
 
       return (
-        <Animated.View key={index} style={[animatedCardStyle, { marginBottom: 16 }]}>
+        <Animated.View key={index} style={[animatedCardStyle, { marginBottom: 16 }]}> 
           <TouchableOpacity
             style={[
               styles.audioCard,
@@ -270,9 +301,7 @@ const AudioPlayerComponent = memo(({ audioData, plan, isExpired, onUpgrade }: Pr
             onPress={() => {
               if (itemIsProcessing) return;
               if (isLocked && !isCurrentlySelected) {
-                // setUpgradeDialogVisible(true);
                 navigation.navigate('SubscriptionScreen');
-
                 return;
               }
               if (isCurrentlySelected) {
@@ -283,76 +312,36 @@ const AudioPlayerComponent = memo(({ audioData, plan, isExpired, onUpgrade }: Pr
             }}
             activeOpacity={0.8}
           >
-
             <View style={styles.cardContent}>
+         
+              {/* Album art */}
               <View style={styles.albumArtContainer}>
                 <Image
-                  source={{ uri: audio.img || 'https://via.placeholder.com/100' }}
+                  source={{ uri: audio.img || 'https://placehold.co/100' }}
                   style={[styles.albumArt, isLocked && styles.lockedImage]}
                 />
-                <View style={styles.playButtonOverlay}>
-                  {itemIsProcessing ? (
-                    <View style={styles.loadingContainer}>
-                      <ActivityIndicator size="small" color="#F09300" />
-                    </View>
-                  ) : (
-                    <Animated.View style={animatedPlayButtonStyle}>
-                      <TouchableOpacity
-                        style={[
-                          styles.playButtonContainer,
-                          isCurrentlySelected && styles.activePlayButton,
-                        ]}
-                        onPress={() => {
-                          if (itemIsProcessing) return;
-                          if (isLocked && !isCurrentlySelected) {
-                            setModalVisible(true);
-                            return;
-                          }
-                          if (isCurrentlySelected) {
-                            togglePlayPause();
-                          } else {
-                            playAudio(index);
-                          }
-                        }}
-                        activeOpacity={0.8}
-                      >
-                        <LinearGradient
-                          colors={
-                            isLocked
-                              ? ['#0a0a0a', '#BDBDBD']
-                              : ['#F09300', 'rgba(255, 107, 53, 0.9)']
-                          }
-                          style={styles.playButtonGradient}
-                        >
-                          <IconButton
-                            icon={isLocked ? 'lock' : isCurrentlySelected && isPlaying ? 'pause' : 'play'}
-                            iconColor="#FFFFFF"
-                            size={24}
-                          />
-                        </LinearGradient>
-                      </TouchableOpacity>
-                    </Animated.View>
-                  )}
-                </View>
-                {isCurrentlySelected && isPlaying && (
-                  <Animated.View style={[styles.waveContainer, animatedWaveStyle]}>
-                    <View style={[styles.wave, styles.wave1]} />
-                    <View style={[styles.wave, styles.wave2]} />
-                    <View style={[styles.wave, styles.wave3]} />
-                  </Animated.View>
-                )}
               </View>
+          
+              {/* Track info */}
               <View style={styles.trackInfo}>
-                <Text
-                  style={[
-                    styles.trackTitle,
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                  {/* Index number is now in playIndexContainer */}
+                   <Text style={[styles.indexNumberText,
                     isCurrentlySelected && styles.activeTrackTitle,
-                    isLocked && styles.lockedText,
-                  ]}
-                  numberOfLines={2}
-                >
-                  {audio.title}
-                </Text>
+                   ]}>
+                     {String(index + 1).padStart(2, '0')}
+                   </Text>
+                  <Text
+                    style={[
+                      styles.trackTitle,
+                      isCurrentlySelected && styles.activeTrackTitle,
+                      isLocked && styles.lockedText,
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {audio.title}
+                  </Text>
+                </View>
                 {isCurrentlySelected && playbackStatus?.isLoaded && (
                   <View style={styles.progressContainer}>
                     <View style={styles.timeContainer}>
@@ -383,28 +372,77 @@ const AudioPlayerComponent = memo(({ audioData, plan, isExpired, onUpgrade }: Pr
                   </View>
                 )}
                 <TouchableOpacity
-                  onPress={() => isLocked ? () => { } : openTranscriptSheet(index)}
+                  onPress={() => (isLocked ? () => {} : openTranscriptSheet(index))}
                   activeOpacity={0.8}
                   style={styles.transcriptTouchable}
                 >
-                  {/* <Text
-                    style={[styles.trackTranscript, isLocked && styles.lockedText]}
-                    numberOfLines={3}
-                    ellipsizeMode="tail"
-                  >
-                    {audio.transcript?.replace(/\n+/g, ' ') || 'No transcript available'}
-                  </Text> */}
                   {audio.transcript && audio.transcript.length > 100 && (
                     <Text style={styles.readMoreText}>Tap to read more...</Text>
                   )}
                 </TouchableOpacity>
               </View>
-              <View style={styles.trackNumber}>
-                <Text
-                  style={[styles.trackNumberText, isCurrentlySelected && styles.activeTrackNumber]}
-                >
-                  {String(index + 1).padStart(2, '0')}
-                </Text>
+                       {/* Play button + index number combined at the start */}
+              <View style={styles.playIndexContainer}>
+                <Animated.View style={animatedPlayButtonStyle}>
+                  <TouchableOpacity
+                    style={[
+                      styles.playIndexButton,
+                      isCurrentlySelected && styles.activePlayButton,
+                    ]}
+                    onPress={() => {
+                      if (itemIsProcessing) return;
+                      if (isLocked && !isCurrentlySelected) {
+                        setModalVisible(true);
+                        return;
+                      }
+                      if (isCurrentlySelected) {
+                        togglePlayPause();
+                      } else {
+                        playAudio(index);
+                      }
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <LinearGradient
+                      colors={
+                        isLocked
+                          ? ['#0a0a0a', '#BDBDBD']
+                          : ['#F09300', 'rgba(255, 107, 53, 0.9)']
+                      }
+                      style={styles.playIndexGradient}
+                    >
+                      {itemIsProcessing ? (
+                        <ActivityIndicator size="small" color="#FFF" />
+                      ) : (
+                        <>
+                          {/* <Text
+                            style={[
+                              styles.indexNumberText,
+                              isCurrentlySelected && styles.activeTrackTitle,
+                            ]}
+                          >
+                            {String(index + 1).padStart(2, '0')}
+                          </Text> */}
+                          <View style={styles.iconCenterWrapper}>
+                            <IconButton
+                              icon={isLocked ? 'lock' : isCurrentlySelected && isPlaying ? 'pause' : 'play'}
+                              iconColor="#FFFFFF"
+                              size={32}
+                              style={styles.playIconButton}
+                            />
+                          </View>
+                        </>
+                      )}
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </Animated.View>
+                {isCurrentlySelected && isPlaying && (
+                  <Animated.View style={[styles.waveContainer, animatedWaveStyle]}>
+                    <Animated.View style={[styles.wave, styles.wave1, animatedWave1]} />
+                    <Animated.View style={[styles.wave, styles.wave2, animatedWave2]} />
+                    <Animated.View style={[styles.wave, styles.wave3, animatedWave3]} />
+                  </Animated.View>
+                )}
               </View>
             </View>
           </TouchableOpacity>
@@ -414,7 +452,6 @@ const AudioPlayerComponent = memo(({ audioData, plan, isExpired, onUpgrade }: Pr
     [currentAudioIndex, isPlaying, isProcessingAudio, playbackStatus, plan, audioData],
   );
 
-  // Custom backdrop for BottomSheetModal
   const renderBackdrop = useCallback((props: Parameters<typeof BottomSheetBackdrop>[0]) => (
     <BottomSheetBackdrop
       {...props}
@@ -425,14 +462,12 @@ const AudioPlayerComponent = memo(({ audioData, plan, isExpired, onUpgrade }: Pr
     />
   ), []);
 
-  // Play all handler
   const playAll = useCallback(() => {
     if (audioData.length === 0) return;
     setIsPlayAll(true);
     playAudio(0);
   }, [audioData]);
 
-  // Pause all handler
   const pauseAll = useCallback(async () => {
     if (soundRef.current) {
       await soundRef.current.pauseAsync();
@@ -440,7 +475,6 @@ const AudioPlayerComponent = memo(({ audioData, plan, isExpired, onUpgrade }: Pr
     setIsPlayAll(false);
   }, []);
 
-  // Sequential play effect
   useEffect(() => {
     if (!isPlayAll) return;
     if (currentAudioIndex === null) return;
@@ -457,7 +491,6 @@ const AudioPlayerComponent = memo(({ audioData, plan, isExpired, onUpgrade }: Pr
 
   return (
     <BottomSheetModalProvider>
-
       <ScrollView style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>E-Magazine Chapters</Text>
@@ -477,7 +510,6 @@ const AudioPlayerComponent = memo(({ audioData, plan, isExpired, onUpgrade }: Pr
           {audioData.map((audio, index) => renderAudioCard(audio, index))}
         </View>
       </ScrollView>
-
 
       <BottomSheetModal
         ref={bottomSheetModalRef}
@@ -508,9 +540,6 @@ const AudioPlayerComponent = memo(({ audioData, plan, isExpired, onUpgrade }: Pr
                 : 'No transcript available'}
             </Text>
           </ScrollView>
-          {/* <Button mode="contained" onPress={closeTranscriptSheet} style={styles.sheetCloseButton}>
-            Close
-          </Button> */}
         </BottomSheetView>
       </BottomSheetModal>
 
@@ -595,8 +624,70 @@ const styles = StyleSheet.create({
   cardContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
+    padding: 16,
     minHeight: 120,
+  },
+  playIndexContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 0,
+    position: 'relative',
+  },
+  playIndexButton: {
+    borderRadius: 50,
+    overflow: 'hidden',
+    width: 64,
+    height: 64,
+     marginLeft: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+    padding: 0,
+    position: 'relative',
+  },
+  activePlayButton: {
+    borderWidth: 2,
+    borderColor: '#F09300',
+  },
+  playIndexGradient: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'column',
+    paddingHorizontal: 0,
+    position: 'relative',
+  },
+  iconCenterWrapper: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 2,
+  },
+  indexNumberText: {
+    color: '#000',
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginRight: 0,
+    marginLeft: 0,
+    zIndex: 1,
+    textAlign: 'center',
+  },
+  playIconButton: {
+    margin: 0,
+    padding: 0,
+    alignSelf: 'center',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+    position: 'relative',
+    left: 0,
+    top: 0,
   },
   albumArtContainer: {
     position: 'relative',
@@ -611,15 +702,6 @@ const styles = StyleSheet.create({
   lockedImage: {
     opacity: 0.6,
   },
-  playButtonOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   loadingContainer: {
     width: 50,
     height: 50,
@@ -633,30 +715,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
-  playButtonContainer: {
-    borderRadius: 25,
-    overflow: 'hidden',
-  },
-  activePlayButton: {
-    elevation: 6,
-    shadowColor: '#F09300',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-  },
-  playButtonGradient: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   waveContainer: {
     position: 'absolute',
-    top: -10,
-    left: -10,
-    right: -10,
-    bottom: -10,
+    top: -20,
+    left: -20,
+    right: -35,
+    bottom: -20,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -664,33 +728,39 @@ const styles = StyleSheet.create({
     position: 'absolute',
     borderRadius: 50,
     borderWidth: 2,
-    borderColor: '#rgba(255, 107, 53, 0.9)',
+    borderColor: 'rgba(255, 107, 53, 0.9)',
   },
   wave1: {
-    width: 100,
-    height: 100,
+    width: 65,
+    height: 65,
     opacity: 0.3,
   },
   wave2: {
-    width: 110,
-    height: 110,
+    width: 75,
+    height: 75,
     opacity: 0.2,
   },
   wave3: {
-    width: 120,
-    height: 120,
+    width: 85,
+    height: 85,
     opacity: 0.1,
   },
   trackInfo: {
     flex: 1,
     justifyContent: 'center',
   },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 16,
+    marginBottom: 8,
+  },
   trackTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#1A1A1A',
-    marginBottom: 8,
     lineHeight: 24,
+    marginLeft: 4,
   },
   activeTrackTitle: {
     color: '#f09300',
@@ -706,7 +776,6 @@ const styles = StyleSheet.create({
     color: '#F09300',
     fontStyle: 'italic',
     fontWeight: '700',
-    // marginBottom: 8,
   },
   lockedText: {
     opacity: 0.6,
@@ -731,26 +800,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 30,
   },
-  trackNumber: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 16,
-    backgroundColor: '#F8F9FA',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
-  trackNumberText: {
-    fontSize: 16,
-    fontWeight: '900',
-    color: '#F09300',
-  },
-  activeTrackNumber: {
-    color: '#F09300',
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  // Dialog styles
   dialogContainer: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
@@ -768,7 +817,6 @@ const styles = StyleSheet.create({
   upgradeButton: {
     backgroundColor: '#F09300',
   },
-  // Bottom sheet styles
   sheetContent: {
     flex: 1,
     paddingHorizontal: 24,
@@ -791,13 +839,6 @@ const styles = StyleSheet.create({
     color: '#333',
     lineHeight: 24,
     paddingBottom: 16,
-  },
-  sheetCloseButton: {
-    marginTop: 16,
-    marginHorizontal: 24,
-    marginBottom: 8,
-    width: 150
-
   },
   transcriptTouchable: {
     paddingVertical: 4,

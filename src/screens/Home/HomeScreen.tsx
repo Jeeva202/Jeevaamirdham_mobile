@@ -1,4 +1,5 @@
 import { REACT_API_URL } from '@/app-config';
+import CelebrityReviewSection from '@/src/components/CelebrityReviewSection';
 import PopularBooks from '@/src/components/popularBooks/PopularBooks';
 import TodayThoughts from '@/src/components/todaysThought/TodaysThought';
 import { useAndroidUpdateCheck } from '@/src/utils/useAndroidUpdateCheck';
@@ -268,6 +269,9 @@ const HomeScreen = () => {
         </LinearGradient> */}
           </ImageBackground>
 
+          {/* Celebrity Review Section (above E-magazine Edition) */}
+          <CelebrityReviewSection />
+
           {/* E-magazine Edition Section */}
           <View style={{ marginBottom: 20 }}>
             <View style={styles.sectionHeader}>
@@ -329,7 +333,9 @@ const styles = StyleSheet.create({
     // backgroundColor: '#f9e5ab',
   },
   contentContainer: {
-    padding: 16,
+    paddingTop: 0,
+    paddingLeft: 16,
+    paddingRight: 16,
     paddingBottom: 20,
   },
   cardSubtitle: {

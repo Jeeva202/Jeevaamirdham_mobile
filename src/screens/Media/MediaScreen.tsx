@@ -796,7 +796,10 @@ const VideoPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn, pla
       setError(null);
       try {
         const response = await axios.get<VideoItem[]>(`${REACT_API_URL}/audio-video-page/all_video_data`);
-        const fetchedData = response.data;
+        // const fetchedData = response.data;
+        const fetchedData: VideoItem[] = response.data.filter(
+          (item: any) => item.category !== 'Celebs Review'
+        );
         setVideoData(fetchedData);
 
         const uniqueCategories = [...new Set(fetchedData.map(video => video.category))];

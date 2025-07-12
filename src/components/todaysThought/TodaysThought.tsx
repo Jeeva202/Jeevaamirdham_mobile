@@ -2,9 +2,9 @@ import { REACT_APP_URL } from '@/app-config';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-    Dimensions,
+    Animated, Dimensions,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -132,6 +132,53 @@ export default function TodayThoughts() {
         handleThoughtChange(newIndex);
     };
 
+    // Marquee animation effect for the thought text
+    const [textWidth, setTextWidth] = useState(0);
+    const [containerWidth, setContainerWidth] = useState(0);
+    const marqueeAnim = useRef(new Animated.Value(0)).current;
+    const marqueeDuration = 12000;
+
+    useEffect(() => {
+        if (textWidth > containerWidth && thoughts[currentThought]?.content) {
+            // Reset animation to start position
+            marqueeAnim.setValue(0);
+
+            // Calculate duration based on text length for smoother scrolling
+            const scrollDistance = textWidth + containerWidth;
+            const duration = Math.max(marqueeDuration, scrollDistance * 12);
+
+            // Start animation
+            const animation = Animated.loop(
+                Animated.sequence([
+                    Animated.timing(marqueeAnim, {
+                        toValue: -textWidth,
+                        duration: duration,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(marqueeAnim, {
+                        toValue: -textWidth,
+                        duration: 0,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(marqueeAnim, {
+                        toValue: 0,
+                        duration: 0,
+                        useNativeDriver: true,
+                    }),
+                ])
+            );
+
+            animation.start();
+
+            return () => {
+                animation.stop();
+            };
+        } else {
+            // Reset animation if text doesn't overflow
+            marqueeAnim.setValue(0);
+        }
+    }, [textWidth, containerWidth, currentThought, thoughts]);
+
     if (isLoading) {
         return (
             <View style={styles.container}>
@@ -160,50 +207,57 @@ export default function TodayThoughts() {
 
     return (
         <View style={styles.container}>
-            <View style={styles.gradient}>
+            <LinearGradient colors={['#FFF7ED', '#FFEDD5']} style={styles.gradient}>
                 <View style={styles.content}>
-                    {/* Compact Header with Audio Button */}
-                    <View style={styles.header}>
+                    {/* Compact Header with Audio Button and Counter */}
+                    <View style={styles.headerRow}>
                         <View style={styles.headerLeft}>
-                            <MaterialIcons name="auto-awesome" size={16} color="#FFF" />
-                            <Text style={styles.headerTitle}>Today's Thought</Text>
-                            {/* <Text style={styles.counter}>({currentThought + 1}/{thoughts.length})</Text> */}
+                            <MaterialIcons name="auto-awesome" size={18} color="#EA580C" style={{ marginRight: 4 }} />
+                            <Text style={styles.headerTitle}>Today Thoughts</Text>
+                            <Text style={styles.counterText}>{thoughts.length > 0 ? `${currentThought + 1}/${thoughts.length}` : ''}</Text>
                         </View>
                         {thoughts[currentThought]?.audioUrl && (
                             <TouchableOpacity
                                 onPress={toggleAudio}
-                                style={[
-                                    styles.audioButtonContainer,
-                                    (audioLoading || !sound) && styles.audioButtonDisabled
-                                ]}
+                                style={[styles.audioButtonContainer, (audioLoading || !sound) && styles.audioButtonDisabled]}
                                 disabled={audioLoading || !sound}
                             >
                                 {audioLoading ? (
-                                    <MaterialIcons name="hourglass-empty" size={16} color="#fff" />
+                                    <MaterialIcons name="hourglass-empty" size={18} color="#EA580C" />
                                 ) : (
-                                    <>
-                                        <MaterialIcons
-                                            name={isPlaying ? 'pause' : 'play-arrow'}
-                                            size={16}
-                                            color="#DC6803"
-                                        />
-                                        <Text style={styles.audioButtonText}>Play</Text>
-                                        
-                                    </>
+                                    <MaterialIcons name={isPlaying ? 'pause' : 'play-arrow'} size={18} color="#EA580C" />
                                 )}
+                                <Text style={styles.audioButtonText}>Play</Text>
                             </TouchableOpacity>
                         )}
-
                     </View>
 
-                    {/* Thought Text */}
-                    <Text
-                        style={styles.thoughtText}
-                        // numberOfLines={1}
-                        ellipsizeMode="tail"
+                    {/* Marquee Thought Text */}
+                    <View
+                        style={[styles.marqueeContainer, { width: '100%' }]}
+                        onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
                     >
-                        {thoughts[currentThought]?.content?.replace(/\n+/g, ' ')}
-                    </Text>
+                        <Animated.View
+                            style={{
+                                transform: [
+                                    {
+                                        translateX: marqueeAnim.interpolate({
+                                            inputRange: [-textWidth, 0],
+                                            outputRange: [-textWidth, containerWidth],
+                                        }),
+                                    },
+                                ],
+                            }}
+                        >
+                            <Text
+                                style={styles.marqueeText}
+                                numberOfLines={1}
+                                onLayout={(e) => setTextWidth(e.nativeEvent.layout.width)}
+                            >
+                                {thoughts[currentThought]?.content?.replace(/\n+/g, ' ') || ''}
+                            </Text>
+                        </Animated.View>
+                    </View>
 
                     {/* Compact Navigation */}
                     {thoughts.length > 1 && (
@@ -211,7 +265,6 @@ export default function TodayThoughts() {
                             <TouchableOpacity style={styles.navButton} onPress={goToPrevious}>
                                 <MaterialIcons name="chevron-left" size={20} color="#EA580C" />
                             </TouchableOpacity>
-
                             <View style={styles.progressContainer}>
                                 {thoughts.map((_, index) => (
                                     <TouchableOpacity
@@ -224,88 +277,106 @@ export default function TodayThoughts() {
                                     />
                                 ))}
                             </View>
-
                             <TouchableOpacity style={styles.navButton} onPress={goToNext}>
                                 <MaterialIcons name="chevron-right" size={20} color="#EA580C" />
                             </TouchableOpacity>
                         </View>
                     )}
                 </View>
-            </View>
+            </LinearGradient>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
-        marginVertical: 6,
-        borderRadius: 12,
+        marginVertical: 10,
+        borderRadius: 14,
         overflow: 'hidden',
         shadowColor: '#EA580C',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 2,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.12,
+        shadowRadius: 6,
+        elevation: 3,
     },
     gradient: {
         flex: 1,
-        backgroundColor: '#fff7ed',
+        backgroundColor: '#FFF7ED',
     },
     content: {
-        padding: 16,
+        padding: 14,
         justifyContent: 'space-between',
-        flex: 1,
     },
-    header: {
+    headerRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: '#FFE6C7',
+        borderRadius: 10,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
         marginBottom: 8,
-        backgroundColor: '#DC6803',
-        padding: 8,
-        borderRadius: 8,
     },
     headerLeft: {
         flexDirection: 'row',
         alignItems: 'center',
-        flex: 1,
     },
     headerTitle: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#FFF',
-        marginLeft: 6,
+        fontSize: 15,
+        fontWeight: '700',
+        color: '#EA580C',
+        marginRight: 8,
     },
-    audioButtonDisabled: {
-        opacity: 0.5,
+    counterText: {
+        fontSize: 13,
+        color: '#EA580C',
+        fontWeight: '600',
+        backgroundColor: '#FFF7ED',
+        borderRadius: 8,
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        marginLeft: 2,
     },
     audioButtonContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 8,
+        backgroundColor: '#FFF',
+        borderRadius: 16,
+        paddingHorizontal: 10,
         paddingVertical: 4,
-        borderRadius: 14,
-        backgroundColor: '#fff',
         borderWidth: 1,
-        borderColor: '#fff',
+        borderColor: '#EA580C',
+        marginLeft: 8,
+    },
+    audioButtonDisabled: {
+        opacity: 0.5,
     },
     audioButtonText: {
-        color: '#DC6803',
+        color: '#EA580C',
         fontWeight: '700',
         marginLeft: 4,
+        fontSize: 13,
     },
-    thoughtText: {
-        fontSize: 14,
-        lineHeight: 20,
+    marqueeContainer: {
+        height: 28,
+        width: '100%',
+        backgroundColor: 'transparent',
+        justifyContent: 'center',
+        alignItems: 'flex-start',
+        marginBottom: 8,
+        overflow: 'hidden',
+    },
+    marqueeText: {
+        fontSize: 15,
         color: '#1F2937',
-        fontWeight: '500',
-        flex: 1,
-        marginBottom: 8, // remove extra space by default
+        fontWeight: '600',
+        textAlign: 'left',
     },
     navigation: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
+        marginTop: 2,
     },
     navButton: {
         width: 28,

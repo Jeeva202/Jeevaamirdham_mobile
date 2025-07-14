@@ -2,9 +2,9 @@ import { REACT_APP_URL } from '@/app-config';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-    Animated, Dimensions,
+    Dimensions,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -93,7 +93,7 @@ export default function TodayThoughts() {
             if (thoughts.length > 1 && !isPlaying) {
                 setCurrentThought(prev => (prev + 1) % thoughts.length);
             }
-        }, 20000); // Increased to 20 seconds
+        }, 20000);
 
         return () => clearInterval(timer);
     }, [thoughts.length, isPlaying]);
@@ -131,53 +131,6 @@ export default function TodayThoughts() {
         const newIndex = (currentThought + 1) % thoughts.length;
         handleThoughtChange(newIndex);
     };
-
-    // Marquee animation effect for the thought text
-    const [textWidth, setTextWidth] = useState(0);
-    const [containerWidth, setContainerWidth] = useState(0);
-    const marqueeAnim = useRef(new Animated.Value(0)).current;
-    const marqueeDuration = 12000;
-
-    useEffect(() => {
-        if (textWidth > containerWidth && thoughts[currentThought]?.content) {
-            // Reset animation to start position
-            marqueeAnim.setValue(0);
-
-            // Calculate duration based on text length for smoother scrolling
-            const scrollDistance = textWidth + containerWidth;
-            const duration = Math.max(marqueeDuration, scrollDistance * 12);
-
-            // Start animation
-            const animation = Animated.loop(
-                Animated.sequence([
-                    Animated.timing(marqueeAnim, {
-                        toValue: -textWidth,
-                        duration: duration,
-                        useNativeDriver: true,
-                    }),
-                    Animated.timing(marqueeAnim, {
-                        toValue: -textWidth,
-                        duration: 0,
-                        useNativeDriver: true,
-                    }),
-                    Animated.timing(marqueeAnim, {
-                        toValue: 0,
-                        duration: 0,
-                        useNativeDriver: true,
-                    }),
-                ])
-            );
-
-            animation.start();
-
-            return () => {
-                animation.stop();
-            };
-        } else {
-            // Reset animation if text doesn't overflow
-            marqueeAnim.setValue(0);
-        }
-    }, [textWidth, containerWidth, currentThought, thoughts]);
 
     if (isLoading) {
         return (
@@ -232,31 +185,11 @@ export default function TodayThoughts() {
                         )}
                     </View>
 
-                    {/* Marquee Thought Text */}
-                    <View
-                        style={[styles.marqueeContainer, { width: '100%' }]}
-                        onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
-                    >
-                        <Animated.View
-                            style={{
-                                transform: [
-                                    {
-                                        translateX: marqueeAnim.interpolate({
-                                            inputRange: [-textWidth, 0],
-                                            outputRange: [-textWidth, containerWidth],
-                                        }),
-                                    },
-                                ],
-                            }}
-                        >
-                            <Text
-                                style={styles.marqueeText}
-                                numberOfLines={1}
-                                onLayout={(e) => setTextWidth(e.nativeEvent.layout.width)}
-                            >
-                                {thoughts[currentThought]?.content?.replace(/\n+/g, ' ') || ''}
-                            </Text>
-                        </Animated.View>
+                    {/* Static Thought Text */}
+                    <View style={styles.textContainer}>
+                        <Text style={styles.thoughtText}>
+                            {thoughts[currentThought]?.content?.replace(/\n+/g, ' ').trim() || ''}
+                        </Text>
                     </View>
 
                     {/* Compact Navigation */}
@@ -357,20 +290,19 @@ const styles = StyleSheet.create({
         marginLeft: 4,
         fontSize: 13,
     },
-    marqueeContainer: {
-        height: 28,
+    textContainer: {
         width: '100%',
         backgroundColor: 'transparent',
         justifyContent: 'center',
         alignItems: 'flex-start',
         marginBottom: 8,
-        overflow: 'hidden',
     },
-    marqueeText: {
+    thoughtText: {
         fontSize: 15,
         color: '#1F2937',
         fontWeight: '600',
         textAlign: 'left',
+        lineHeight: 20,
     },
     navigation: {
         flexDirection: 'row',

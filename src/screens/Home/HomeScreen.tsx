@@ -251,9 +251,7 @@ const HomeScreen = () => {
           {/* --- Expired Subscription Banner --- */}
           <ExpiredBanner />
 
-          {/* Today's Thoughts Section */}
-          <TodayThoughts />
-
+         
           {/* Banner Section (Image) */}
           <ImageBackground
             source={require('../../../assets/images/Banner_mobile.png')}
@@ -268,6 +266,10 @@ const HomeScreen = () => {
         >
         </LinearGradient> */}
           </ImageBackground>
+
+           {/* Today's Thoughts Section */}
+          <TodayThoughts />
+
 
           {/* Celebrity Review Section (above E-magazine Edition) */}
           <CelebrityReviewSection />

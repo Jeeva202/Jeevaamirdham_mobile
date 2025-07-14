@@ -7,7 +7,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Dimensions,
-  Image,
   StyleSheet,
   TouchableOpacity,
   View
@@ -315,12 +314,12 @@ const AudioPlayerComponent = memo(({ audioData, plan, isExpired, onUpgrade }: Pr
             <View style={styles.cardContent}>
          
               {/* Album art */}
-              <View style={styles.albumArtContainer}>
+              {/* <View style={styles.albumArtContainer}>
                 <Image
                   source={{ uri: audio.img || 'https://placehold.co/100' }}
                   style={[styles.albumArt, isLocked && styles.lockedImage]}
                 />
-              </View>
+              </View> */}
           
               {/* Track info */}
               <View style={styles.trackInfo}>
@@ -337,7 +336,7 @@ const AudioPlayerComponent = memo(({ audioData, plan, isExpired, onUpgrade }: Pr
                       isCurrentlySelected && styles.activeTrackTitle,
                       isLocked && styles.lockedText,
                     ]}
-                    numberOfLines={1}
+                    numberOfLines={2}
                   >
                     {audio.title}
                   </Text>
@@ -625,7 +624,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    minHeight: 120,
+    minHeight: 80,
   },
   playIndexContainer: {
     alignItems: 'center',

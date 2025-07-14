@@ -51,7 +51,7 @@ const CelebrityReviewSection = () => {
   return (
     <View style={styles.sectionContainer}>
       <View style={styles.headerRow}>
-        <Text style={styles.sectionTitle}>Celebrity review</Text>
+        <Text style={styles.sectionTitle}>Jeevaamirdham Book Reviews</Text>
       </View>
       <CelebrityReview data={videos} />
     </View>

@@ -3,6 +3,20 @@ import { Video } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useState } from 'react';
 import { Dimensions, FlatList, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import YoutubePlayer from 'react-native-youtube-iframe';
+// Helper for YouTube detection
+const isYouTubeUrl = (url: string): boolean => {
+  if (!url) return false;
+  return /(?:youtube\.com|youtu\.be)\//.test(url);
+};
+
+const getYouTubeVideoId = (url: string): string | null => {
+  if (!url) return null;
+  // Handles various YouTube URL formats
+  const regex = /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([^#&?\n\r]*)/;
+  const match = url.match(regex);
+  return match && match[1] ? match[1] : null;
+};
 
 const { width } = Dimensions.get('window');
 
@@ -93,16 +107,33 @@ const CelebrityReview: React.FC<CelebrityReviewProps> = ({ data }) => {
               <MaterialIcons name="close" size={28} color="#EA580C" />
             </TouchableOpacity>
             {selectedVideo && (
-              <Video
-                source={{ uri: selectedVideo.videoUrl }}
-                rate={1.0}
-                volume={1.0}
-                isMuted={false}
-                resizeMode={"contain" as any}
-                shouldPlay
-                useNativeControls
-                style={styles.videoPlayer}
-              />
+              isYouTubeUrl(selectedVideo.videoUrl) ? (
+                <YoutubePlayer
+                  height={width * 0.5}
+                  width={"100%"}
+                  videoId={getYouTubeVideoId(selectedVideo.videoUrl) || ''}
+                  play={true}
+                  webViewProps={{
+                    allowsFullscreenVideo: true,
+                    allowsInlineMediaPlayback: true,
+                    mediaPlaybackRequiresUserAction: false,
+                    javaScriptEnabled: true,
+                    domStorageEnabled: true,
+                    style: { backgroundColor: 'black' },
+                  }}
+                />
+              ) : (
+                <Video
+                  source={{ uri: selectedVideo.videoUrl }}
+                  rate={1.0}
+                  volume={1.0}
+                  isMuted={false}
+                  resizeMode={"contain" as any}
+                  shouldPlay
+                  useNativeControls
+                  style={styles.videoPlayer}
+                />
+              )
             )}
             
           </View>
@@ -228,6 +259,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#EA580C',
     marginTop: 16,
+     marginBottom: 16,
     textAlign: 'center',
     textTransform: 'uppercase',
     letterSpacing: -0.5,

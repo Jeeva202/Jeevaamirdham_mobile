@@ -28,7 +28,7 @@ const CelebrityReviewSection = () => {
       try {
         const response = await axios.get(`${REACT_APP_URL}/audio-video-page/all_video_data`);
         const data: VideoItem[] = response.data.filter(
-          (item: any) => item.category === 'Kural Amirdham'
+          (item: any) => item.category === 'Review'
         );
         const mapped = data.map((item: VideoItem) => ({
           id: item.id?.toString() || Math.random().toString(),

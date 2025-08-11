@@ -32,6 +32,20 @@ import {
   TabBar,
   TabView
 } from 'react-native-tab-view';
+import YoutubePlayer from 'react-native-youtube-iframe';
+// --- Helper for YouTube detection ---
+const isYouTubeUrl = (url: string): boolean => {
+  if (!url) return false;
+  return /(?:youtube\.com|youtu\.be)\//.test(url);
+};
+
+const getYouTubeVideoId = (url: string): string | null => {
+  if (!url) return null;
+  // Handles various YouTube URL formats
+  const regex = /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([^#&?\n\r]*)/;
+  const match = url.match(regex);
+  return match && match[1] ? match[1] : null;
+};
 
 import { REACT_API_URL } from '@/app-config'; // Ensure this path is correct
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -798,7 +812,7 @@ const VideoPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn, pla
         const response = await axios.get<VideoItem[]>(`${REACT_API_URL}/audio-video-page/all_video_data`);
         // const fetchedData = response.data;
         const fetchedData: VideoItem[] = response.data.filter(
-          (item: any) => item.category !== 'Celebs Review'
+          (item: any) => item.category !== 'Review'
         );
         setVideoData(fetchedData);
 
@@ -1008,29 +1022,52 @@ const VideoPlayerTab: React.FC<MediaTabProps> = ({ isActive, isUserLoggedIn, pla
 
       <Surface style={styles.mainVideoSurface}>
         <View style={styles.videoContainer}>
-          <Video
-            ref={videoRef}
-            style={styles.video}
-            source={currentVideo ? { uri: currentVideo.videofile_url } : undefined}
-            useNativeControls
-            resizeMode={ResizeMode.CONTAIN}
-            onPlaybackStatusUpdate={onPlaybackStatusUpdate}
-            onError={(errorMessage) => {
-              console.error("Video Player Instance Error:", errorMessage);
-              setIsVideoBuffering(false);
-              setIsVideoPlaying(false);
-              if (isActive && currentVideo) alert(`Error initializing video player for: ${currentVideo.title}`);
-            }}
-          />
-          {isVideoBuffering && (
-            <View style={styles.videoLoadingOverlay}>
-              <ActivityIndicator size="large" color={theme.colors.onPrimary} />
-            </View>
-          )}
-          {!currentVideo && (
-            <View style={[styles.video, { position: 'absolute', backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' }]}>
-              <IconButton icon="play-circle-outline" size={64} iconColor={theme.colors.primary} style={{ alignSelf: 'center' }} />
-            </View>
+          {currentVideo && isYouTubeUrl(currentVideo.videofile_url) ? (
+            <YoutubePlayer
+              height={220}
+              width={"100%"}
+              videoId={getYouTubeVideoId(currentVideo.videofile_url) || ''}
+              play={isVideoPlaying}
+              onChangeState={state => {
+                setIsVideoPlaying(state === 'playing');
+                setIsVideoBuffering(state === 'buffering');
+              }}
+              webViewProps={{
+                allowsFullscreenVideo: true,
+                allowsInlineMediaPlayback: true,
+                mediaPlaybackRequiresUserAction: false,
+                javaScriptEnabled: true,
+                domStorageEnabled: true,
+                style: { backgroundColor: 'black' },
+              }}
+            />
+          ) : (
+            <>
+              <Video
+                ref={videoRef}
+                style={styles.video}
+                source={currentVideo ? { uri: currentVideo.videofile_url } : undefined}
+                useNativeControls
+                resizeMode={ResizeMode.CONTAIN}
+                onPlaybackStatusUpdate={onPlaybackStatusUpdate}
+                onError={(errorMessage) => {
+                  console.error("Video Player Instance Error:", errorMessage);
+                  setIsVideoBuffering(false);
+                  setIsVideoPlaying(false);
+                  if (isActive && currentVideo) alert(`Error initializing video player for: ${currentVideo.title}`);
+                }}
+              />
+              {isVideoBuffering && (
+                <View style={styles.videoLoadingOverlay}>
+                  <ActivityIndicator size="large" color={theme.colors.onPrimary} />
+                </View>
+              )}
+              {!currentVideo && (
+                <View style={[styles.video, { position: 'absolute', backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' }]}> 
+                  <IconButton icon="play-circle-outline" size={64} iconColor={theme.colors.primary} style={{ alignSelf: 'center' }} />
+                </View>
+              )}
+            </>
           )}
         </View>
         <Card.Content style={styles.mainVideoInfo}>

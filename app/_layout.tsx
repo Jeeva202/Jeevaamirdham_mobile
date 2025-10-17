@@ -1,4 +1,5 @@
 import AppNavigator from '@/src/navigation/AppNavigator';
+import { useAndroidUpdateCheck } from '@/src/utils/useAndroidUpdateCheck';
 import React from 'react';
 import { StatusBar } from 'react-native';
 import 'react-native-gesture-handler';
@@ -11,6 +12,9 @@ import { store } from "../src/redux/store";
 import customTheme from './theme';
 
 export default function RootLayout() {
+  // Check for app updates
+  useAndroidUpdateCheck();
+  
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {

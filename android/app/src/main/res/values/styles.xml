@@ -1,8 +1,13 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-  <style name="AppTheme" parent="Theme.EdgeToEdge">
+  <!-- Theme.EdgeToEdge is not available in all setups; use a MaterialComponents base theme provided by
+       com.google.android.material:material which is already included in dependencies. This keeps edge-to-edge
+       behavior while avoiding the missing resource. -->
+  <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
     <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
     <item name="colorPrimary">@color/colorPrimary</item>
     <item name="android:statusBarColor">#ffffff</item>
+    <!-- Preserve expo/edge-to-edge flag as an attribute if used elsewhere -->
+    <item name="enableEdgeToEdge">true</item>
   </style>
   <style name="Theme.App.SplashScreen" parent="Theme.SplashScreen">
     <item name="windowSplashScreenBackground">@color/splashscreen_background</item>

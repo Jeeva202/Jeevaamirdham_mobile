@@ -2,7 +2,7 @@
   "expo": {
     "name": "Jeevaamirdham_android",
     "slug": "Jeevaamirdham_android",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/appLogo.png",
     "scheme": "jeevaamirdhamandroid",
@@ -39,7 +39,9 @@
       [
         "@react-native-google-signin/google-signin"
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-video",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
